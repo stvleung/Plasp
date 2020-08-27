@@ -6,6 +6,7 @@ use overload
     fallback => 1;
 
 use Moo::Role;
+use Types::Standard qw(Str);
 
 =head1 NAME
 
@@ -36,7 +37,7 @@ Holds the exception message.
 
 has message => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => sub { $! || '' },
 );
 

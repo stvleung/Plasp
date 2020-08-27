@@ -6,11 +6,12 @@ use URI;
 use URI::Escape;
 
 use Moo;
+use Types::Standard qw(InstanceOf Str);
 use namespace::clean;
 
 has 'asp' => (
     is       => 'ro',
-    isa      => sub { die "$_[0] is not a Plasp object!" unless ref $_[0] eq 'Plasp' },
+    isa      => InstanceOf['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -46,7 +47,7 @@ Apache Timeout configuration option, normally in httpd.conf.
 
 has 'ScriptTimeout' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => 0,
 );
 

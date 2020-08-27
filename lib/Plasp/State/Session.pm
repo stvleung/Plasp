@@ -1,14 +1,14 @@
 package Plasp::State::Session;
 
 use Moo::Role;
-
-with 'Plasp::TraitFor::Bool';
+use Sub::HandlesVia;
+use Types::Standard qw(InstanceOf Bool Str);
 
 requires qw(_fetch_session _store_session _delete_session);
 
 has 'asp' => (
     is       => 'ro',
-    isa      => sub { die "$_[0] is not a Plasp object!" unless ref $_[0] eq 'Plasp' },
+    isa      => InstanceOf['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -68,19 +68,15 @@ used for the following methods and properties:
 =cut
 
 has '_is_new' => (
-    is      => 'rw',
-    default => 0,
+    is          => 'rw',
+    isa         => Bool,
+    default     => 0,
+    handles_via => 'Bool',
+    handles     => {
+        _set_is_new   => 'set',
+        _unset_is_new => 'unset',
+    },
 );
-
-sub _set_is_new {
-    my $self = shift;
-    __bool_set( \( $self->{_is_new} ), @_ );
-}
-
-sub _unset_is_new {
-    my $self = shift;
-    __bool_unset( \( $self->{_is_new} ), @_ );
-}
 
 =over
 
@@ -112,8 +108,8 @@ between the client and the server as a cookie.
 =cut
 
 has 'SessionID' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    is  => 'rw',
+    isa => Str,
 );
 
 =item $Session->{Timeout} [= $minutes]
@@ -129,7 +125,7 @@ garbage collects it eventually.
 
 has 'Timeout' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] || $_[0] != int( $_[0] ) },
+    isa     => Str,
     default => 60,
 );
 
@@ -147,14 +143,14 @@ cleared in the process, just as when any session times out.
 =cut
 
 has 'IsAbandoned' => (
-    is      => 'rw',
-    default => 0,
+    is          => 'rw',
+    isa         => Bool,
+    default     => 0,
+    handles_via => 'Bool',
+    handles     => {
+        Abandon => 'set',
+    },
 );
-
-sub Abandon {
-    my $self = shift;
-    __bool_set( \( $self->{IsAbandoned} ), @_ );
-}
 
 =item $Session->Lock()
 

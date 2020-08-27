@@ -1,16 +1,15 @@
 package Plasp::Request;
 
 use List::Util qw(all);
-use Scalar::Util qw(looks_like_number);
 
 use Moo;
+use Sub::HandlesVia;
+use Types::Standard qw(InstanceOf Str Int HashRef);
 use namespace::clean;
-
-with 'Plasp::TraitFor::Hash';
 
 has 'asp' => (
     is       => 'ro',
-    isa      => sub { die "$_[0] is not a Plasp object!" unless ref $_[0] eq 'Plasp' },
+    isa      => InstanceOf['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -70,34 +69,10 @@ in version C<2.31>.
 
 has 'Method' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     lazy    => 1,
     default => sub { shift->asp->req->method },
 );
-
-has 'Params' => (
-    is      => 'ro',
-    reader  => '_get_Params',
-    lazy    => 1,
-    default => sub { shift->asp->req->parameters },
-);
-
-sub _get_Param {
-    my $self = shift;
-    __hash_get( $self->_get_Params, @_ );
-}
-
-has 'QueryString' => (
-    is      => 'ro',
-    reader  => '_get_QueryString',
-    lazy    => 1,
-    default => sub { shift->asp->req->query_parameters },
-);
-
-sub _get_Query {
-    my $self = shift;
-    __hash_get( $self->_get_QueryString, @_ );
-}
 
 =item $Request->{TotalBytes}
 
@@ -109,16 +84,13 @@ C<< $Request->ServerVariables('CONTENT_LENGTH') >>
 
 has 'TotalBytes' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a number!" unless looks_like_number $_[0] },
+    isa     => Int,
     lazy    => 1,
     default => sub { shift->asp->req->content_length || 0 },
 );
 
 sub BUILD {
     my ( $self ) = @_;
-
-    # Don't initiate below attributes unless past setup phase
-    return unless $self->asp->_setup_finished;
 
     # Due to problem mentioned above in the builder methods, we are calling
     # these attributes to populate the values for the hash key to be available
@@ -200,11 +172,11 @@ For more information on cookies in ASP, please read C<< $Response->Cookies() >>
 # to load the default value before the object is fully initialized. lazy => 1 is
 # a workaround to build the defaults later
 has 'Cookies' => (
-    is      => 'ro',
-    isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
-    reader  => '_get_Cookies',
-    lazy    => 1,
-    default => sub {
+    is          => 'ro',
+    isa         => HashRef,
+    reader      => '_get_Cookies',
+    lazy        => 1,
+    default     => sub {
         my ( $self ) = @_;
         my %cookies;
         for my $name ( keys %{ $self->asp->req->cookies } ) {
@@ -222,12 +194,11 @@ has 'Cookies' => (
         }
         return \%cookies;
     },
+    handles_via => 'Hash',
+    handles     => {
+        _get_Cookie => 'get',
+    },
 );
-
-sub _get_Cookie {
-    my $self = shift;
-    __hash_get( $self->Cookies, @_ );
-}
 
 sub Cookies {
     my ( $self, $name, $key ) = @_;
@@ -273,11 +244,11 @@ easily.
 =cut
 
 has 'FileUpload' => (
-    is      => 'ro',
-    isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
-    reader  => '_get_FileUploads',
-    lazy    => 1,
-    default => sub {
+    is          => 'ro',
+    isa         => HashRef,
+    reader      => '_get_FileUploads',
+    lazy        => 1,
+    default     => sub {
         my ( $self ) = @_;
         my %uploads;
 
@@ -295,12 +266,11 @@ has 'FileUpload' => (
         }
         return \%uploads;
     },
+    handles_via => 'Hash',
+    handles     => {
+        _get_FileUpload => 'get',
+    },
 );
-
-sub _get_FileUpload {
-    my $self = shift;
-    __hash_get( $self->_get_FileUploads, @_ );
-}
 
 sub FileUpload {
     my ( $self, $form_field, $key ) = @_;
@@ -339,25 +309,24 @@ are implemented via the CGI.pm module.
 =cut
 
 has 'Form' => (
-    is      => 'ro',
-    isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
-    reader  => '_get_Form',
-    lazy    => 1,
-    default => sub {
+    is          => 'ro',
+    isa         => InstanceOf['Hash::MultiValue'],
+    reader      => '_get_Form',
+    lazy        => 1,
+    default     => sub {
         my ( $self ) = @_;
 
         # ASP includes uploads in its Form()
-        return {
-            %{ $self->asp->req->body_parameters },
-            %{ $self->asp->req->uploads },
-        };
+        return Hash::MultiValue->new(
+            $self->asp->req->body_parameters->flatten,
+            $self->asp->req->uploads->flatten,
+        );
+    },
+    handles_via => 'Hash',
+    handles     => {
+        _get_FormField => 'get',
     },
 );
-
-sub _get_FormField {
-    my $self = shift;
-    __hash_get( $self->_get_Form, @_ );
-}
 
 sub Form {
     my ( $self, $name ) = @_;
@@ -386,6 +355,18 @@ nice alias like:
 
 =cut
 
+has 'Params' => (
+    is          => 'ro',
+    isa         => InstanceOf['Hash::MultiValue'],
+    reader      => '_get_Params',
+    lazy        => 1,
+    default     => sub { shift->asp->req->parameters },
+    handles_via => 'Hash',
+    handles     => {
+        _get_Param => 'get',
+    },
+);
+
 sub Params {
     my ( $self, $name ) = @_;
 
@@ -405,6 +386,18 @@ http://localhost/?data=value. If C<$name> is not specified, returns a ref to a
 hash of all the query string data.
 
 =cut
+
+has 'QueryString' => (
+    is          => 'ro',
+    isa         => InstanceOf['Hash::MultiValue'],
+    reader      => '_get_QueryString',
+    lazy        => 1,
+    default     => sub { shift->asp->req->query_parameters },
+    handles_via => 'Hash',
+    handles     => {
+        _get_Query => 'get',
+    },
+);
 
 sub QueryString {
     my ( $self, $name ) = @_;
@@ -430,10 +423,11 @@ this method:
 =cut
 
 has 'ServerVariables' => (
-    is      => 'ro',
-    reader  => '_get_ServerVariables',
-    lazy    => 1,
-    default => sub {
+    is          => 'ro',
+    isa         => HashRef,
+    reader      => '_get_ServerVariables',
+    lazy        => 1,
+    default     => sub {
         my ( $self ) = @_;
 
         # Populate %ENV freely because we assume some process upstream will
@@ -448,12 +442,11 @@ has 'ServerVariables' => (
 
         return \%ENV;
     },
+    handles_via => 'Hash',
+    handles     => {
+        _get_ServerVariable => 'get',
+    },
 );
-
-sub _get_ServerVariable {
-    my $self = shift;
-    __hash_get( $self->_get_ServerVariables, @_ );
-}
 
 sub ServerVariables {
     my ( $self, $name ) = @_;

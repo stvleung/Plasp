@@ -7,24 +7,24 @@ use CGI::Simple::Cookie;
 use Data::Dumper;
 use HTTP::Date qw(str2time);
 use List::Util qw(all);
-use Scalar::Util qw(blessed looks_like_number);
+use Scalar::Util qw(blessed);
 use Tie::Handle;
 
 use Moo;
+use Sub::HandlesVia;
+use Types::Standard qw(InstanceOf Str Int Bool HashRef ArrayRef ScalarRef);
 use namespace::clean;
-
-with 'Plasp::TraitFor::Hash', 'Plasp::TraitFor::String';
 
 has 'asp' => (
     is       => 'ro',
-    isa      => sub { die "$_[0] is not a Plasp object!" unless ref $_[0] eq 'Plasp' },
+    isa      => InstanceOf['Plasp'],
     required => 1,
     weak_ref => 1,
 );
 
 has '_flushed_offset' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a number!" unless looks_like_number $_[0] },
+    isa     => Int,
     default => 0,
 );
 
@@ -69,28 +69,21 @@ place before content is flushed to the client web browser.
 
 has 'BinaryRef' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a ScalarRef!" unless ref $_[0] eq 'SCALAR' },
+    isa     => ScalarRef,
     default => sub { \( shift->Body ) }
 );
 
 has 'Body' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
-    default => '',
+    is          => 'rw',
+    isa         => Str,
+    default     => '',
+    handles_via => 'String',
+    handles     => {
+        BodyLength => 'length',
+        BodySubstr => 'substr',
+        Write      => 'append',
+    },
 );
-
-sub BodyLength {
-    my $self = shift;
-    __str_length( \( $self->{Body} ), @_ );
-}
-
-sub BodySubstr {
-    my $self = shift;
-    $self->asp->log->debug( Data::Dumper::Dumper( "BEFORE args:", \@_, "Body:", $self->{Body} ) );
-    my $substring = __str_substr( \( $self->{Body} ), @_ );
-    $self->asp->log->debug( Data::Dumper::Dumper( "AFTER args:", \@_, "substring:", $substring, "Body:", $self->{Body} ) );
-    return $substring;
-}
 
 # This attribute has no effect
 has 'Buffer' => (
@@ -107,7 +100,7 @@ content. This setting controls the value set in the HTTP header C<Cache-Control>
 
 has 'CacheControl' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => 'private',
 );
 
@@ -123,14 +116,14 @@ corresponding header would look like:
 
 has 'Charset' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => '',
 );
 
 # This attribute has no effect
 has 'Clean' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a number!" unless looks_like_number $_[0] },
+    isa     => Int,
     default => 0,
 );
 
@@ -143,7 +136,7 @@ to the client. Sent as an HTTP header.
 
 has 'ContentType' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => 'text/html',
 );
 
@@ -157,19 +150,20 @@ header generated is a standard HTTP date like: "Wed, 09 Feb 1994 22:23:32 GMT".
 
 has 'Expires' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a number!" unless looks_like_number $_[0] },
+    isa     => Int,
     default => 0,
 );
 
 has 'ExpiresAbsolute' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a supported date format!" if $_[0] && ! str2time $_[0] },
+    isa     => sub { die "$_[0] is not a supported date format!" if $_[0] && Str->check( $_[0] ) && ! str2time $_[0] },
     default => '',
 );
 
 # This attribute has no effect
 has 'FormFill' => (
     is      => 'rw',
+    isa     => Bool,
     default => 0,
 );
 
@@ -191,13 +185,14 @@ connection status without calling first a C<< $Response->Flush >>
 # This attribute has no effect
 has 'IsClientConnected' => (
     is      => 'rw',
+    isa     => Bool,
     default => 1,
 );
 
 # This attribute has no effect
 has 'PICS' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => '',
 );
 
@@ -210,7 +205,7 @@ Sets the status code returned by the server. Can be used to set messages like
 
 has 'Status' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a number!" unless looks_like_number $_[0] },
+    isa     => Int,
     default => 0,
 );
 
@@ -220,9 +215,6 @@ sub BUILD {
     no warnings 'redefine';
     *TIEHANDLE = sub {$self};
     $self->{BinaryRef} = \( $self->{Body} );
-
-    # Don't initiate below attributes unless past setup phase
-    return unless $self->asp->_setup_finished;
 
     # Due to problem mentioned above in the builder methods, we are calling
     # these attributes to populate the values for the hash key to be available
@@ -243,8 +235,8 @@ the main page is sent.
 =cut
 
 has '_headers' => (
-    is  => 'rw',
-    isa => sub { die "$_[0] is not a ArrayRef!" unless ref $_[0] eq 'ARRAY' },
+    is      => 'rw',
+    isa     => ArrayRef
     default => sub { [ ] },
 );
 
@@ -375,23 +367,18 @@ http://home.netscape.com/newsref/std/cookie_spec.html
 # to load the default value before the object is fully initialized. lazy => 1 is
 # a workaround to build the defaults later
 has 'Cookies' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
-    reader  => '_get_Cookies',
-    writer  => '_set_Cookies',
-    lazy    => 1,
-    default => sub { {} },
+    is          => 'rw',
+    isa         => HashRef,
+    reader      => '_get_Cookies',
+    writer      => '_set_Cookies',
+    lazy        => 1,
+    default     => sub { {} },
+    handles_via => 'Hash',
+    handles     => {
+        _get_Cookie => 'get',
+        _set_Cookie => 'set',
+    },
 );
-
-sub _get_Cookie {
-    my $self = shift;
-    __hash_get( $self->_get_Cookies, @_ );
-}
-
-sub _set_Cookie {
-    my $self = shift;
-    __hash_set( $self->_get_Cookies, @_ );
-}
 
 sub Cookies {
     my ( $self, $name, @cookie ) = @_;
@@ -709,11 +696,6 @@ point go through this method.
 sub WriteRef {
     my ( $self, $dataref ) = @_;
     $self->Write( $$dataref );
-}
-
-sub Write {
-    my $self = shift;
-    __str_append( \( $self->{Body} ), @_ );
 }
 
 1;

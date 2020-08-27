@@ -11,9 +11,12 @@ use Scalar::Util qw(blessed);
 use Type::Tiny;
 
 use Moo;
+use Sub::HandlesVia;
+use Types::Standard qw(InstanceOf Str Bool ArrayRef HashRef);
+use Types::Path::Tiny qw(Path AbsPath);
 use namespace::clean;
 
-with 'Plasp::Compiler', 'Plasp::Parser', 'Plasp::State', 'Plasp::TraitFor::Hash';
+with 'Plasp::Compiler', 'Plasp::Parser', 'Plasp::State';
 
 our $VERSION = '0.01';
 
@@ -72,13 +75,8 @@ has 'req' => (
     clearer => 'clear_req'
 );
 
-has '_setup_finished' => (
-    is      => 'rw',
-    default => 1,
-);
-
 has '_mm' => (
-    is      => 'ro',
+    is      => 'lazy',
     default => sub {
         my $mm = File::MMagic->new( '/etc/magic' );
         $mm->addFileExts( '\.xml$', 'text/xml' );
@@ -134,8 +132,8 @@ it'll be the the current working directory.
 
 has 'ApplicationRoot' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Path!" unless ref $_[0] eq 'Path::Tiny' },
-    coerce  => sub { ref $_[0] eq 'Path::Tiny' ? $_[0] : path( $_[0] ) },
+    isa     => AbsPath,
+    coerce  => AbsPath->coercion,
     default => sub { path( '.' )->absolute },
 );
 
@@ -150,8 +148,8 @@ subdirectory C<public> relative to the ApplicationRoot.
 
 has 'DocumentRoot' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Path!" unless ref $_[0] eq 'Path::Tiny' },
-    coerce  => sub { ref $_[0] eq 'Path::Tiny' ? $_[0] : path( $_[0] ) },
+    isa     => Path,
+    coerce  => Path->coercion,
     default => sub { path( shift->ApplicationRoot, 'public' ) },
 );
 
@@ -168,8 +166,8 @@ section on includes for more information.
 
 has 'Global' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a Path!" unless ref $_[0] eq 'Path::Tiny' },
-    coerce  => sub { ref $_[0] eq 'Path::Tiny' ? $_[0] : path( $_[0] ) },
+    isa     => Path,
+    coerce  => Path->coercion,
     default => sub { path( '/tmp' ) },
 );
 
@@ -188,7 +186,7 @@ and subs defined in a perl module that is included with commands like:
 
 has 'GlobalPackage' => (
     is  => 'ro',
-    isa => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa => Str,
 );
 
 =item IncludesDir
@@ -219,13 +217,10 @@ finally the C<IncludesDir> setting.
 
 has 'IncludesDir' => (
     is      => 'rw',
-    isa     => sub {
-        die "$_[0] are not Paths!"
-            unless ( ref $_[0] eq 'ARRAY' ) && ( all { ref $_ eq 'Path::Tiny' } @{$_[0]} )
-    },
+    isa     => ArrayRef[Path],
     coerce  => sub {
         my @paths = ref $_[0] eq 'ARRAY' ? @{$_[0]} : @_;
-        return [ map { path( $_ ) } @paths ];
+        return [ map { Path->coercion->( $_ ) } @paths ];
     },
     lazy    => 1,
     default => sub { [ shift->Global() ] },
@@ -249,7 +244,7 @@ working.
 
 has 'MailHost' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => 'localhost',
 );
 
@@ -265,7 +260,7 @@ mail header for the C<< $Server->Mail() >> API extension
 
 has 'MailFrom' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => '',
 );
 
@@ -303,33 +298,25 @@ signal.
 
 has 'Debug' => (
     is      => 'ro',
+    isa     => Bool,
     default => 0,
 );
 
 has '_include_file_cache' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
-    default => sub { { } },
+    is          => 'rw',
+    isa         => HashRef,
+    default     => sub { { } },
+    handles_via => 'Hash',
+    handles     => {
+        _include_file_from_cache => 'get',
+        _cache_include_file      => 'set',
+        _include_file_is_cached  => 'exists',
+    },
 );
-
-sub _include_file_from_cache {
-    my $self = shift;
-    return __hash_get( $self->_include_file_cache, @_ );
-}
-
-sub _cache_include_file {
-    my $self = shift;
-    return __hash_set( $self->_include_file_cache, @_ );
-}
-
-sub _include_file_is_cached {
-    my $self = shift;
-    return __hash_exists( $self->_include_file_cache, @_ );
-}
 
 has '_compile_checksum' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa     => Str,
     default => sub {
         my $self = shift;
         md5_hex(
@@ -343,25 +330,24 @@ has '_compile_checksum' => (
 
 has 'log' => (
     is      => 'rw',
-    isa     => sub { die "$_[0] is not a Plasp::Log!" unless ref $_[0] eq 'Plasp::Log' },
+    isa     => InstanceOf['Plasp::Log'],
     default => sub { Plasp::Log->new },
 );
 
 has 'errors' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a ArrayRef!" unless ref $_[0] eq 'ARRAY' },
-    default => sub { [ ] },
+    is          => 'rw',
+    isa         => ArrayRef,
+    default     => sub { [ ] },
+    handles_via => 'Array',
+    handles     => {
+        has_errors => 'count',
+    }
 );
 
 sub error {
     my $self = shift;
     $self->log->error( @_ );
     push @{$self->errors}, @_;
-}
-
-sub has_errors {
-    my $self = shift;
-    return scalar( @{$self->errors} );
 }
 
 =head1 OBJECTS
@@ -417,10 +403,10 @@ for ( qw(Server Request Response GlobalASA) ) {
     require_module $class;
     has "$_" => (
         is      => 'ro',
-        isa     => sub { die "$_[0] is not a $class!" unless ref $_[0] eq $class },
+        isa     => InstanceOf[$class],
         clearer => "clear_$_",
         lazy    => 1,
-        default => sub { $class->new( asp => shift ) }
+        default => sub { $class->new( asp => shift ) },
     );
 }
 
@@ -610,7 +596,7 @@ sub cleanup {
 
     # Since cleanup happens at the end of script processing, trigger
     # Script_OnEnd
-    $self->GlobalASA->Script_OnEnd if $self->_setup_finished;
+    $self->GlobalASA->Script_OnEnd;
 
     # Clean up abandoned $Session, which marks the end of the $Session and so
     # trigger Session_OnEnd. Additionally, need to remove session from store.

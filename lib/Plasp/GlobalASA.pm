@@ -4,6 +4,8 @@ use Path::Tiny;
 use File::Slurp qw(read_file);
 
 use Moo;
+use Types::Standard qw(InstanceOf Str);
+use Types::Path::Tiny qw(Path);
 use namespace::clean;
 
 our @Routines = qw(
@@ -19,7 +21,7 @@ our @Routines = qw(
 
 has 'asp' => (
     is       => 'ro',
-    isa      => sub { die "$_[0] is not a Plasp object!" unless ref $_[0] eq 'Plasp' },
+    isa      => InstanceOf['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -77,13 +79,14 @@ the C<Application_OnEnd> event may never occur.
 
 has 'filename' => (
     is      => 'ro',
-    isa     => sub { die "$_[0] is not a Path!" unless ref $_[0] eq 'Path::Tiny' },
+    isa     => Path,
     default => sub { shift->asp->Global->child( 'global.asa' ) },
+    coerce  => Path->coercion,
 );
 
 has 'package' => (
     is  => 'lazy',
-    isa => sub { die "$_[0] is not a Str!" if ref $_[0] },
+    isa => Str,
 );
 
 sub _build_package {

@@ -6,8 +6,10 @@ use File::Slurp qw(read_file);
 use Plasp::Exception::NotFound;
 
 use Moo::Role;
+use Sub::HandlesVia;
+use Types::Standard qw(HashRef);
 
-with 'Plasp::Parser', 'Plasp::TraitFor::Hash';
+with 'Plasp::Parser';
 
 requires 'parse_file';
 
@@ -34,42 +36,27 @@ This class implements the ability to compile parsed ASP code.
 =cut
 
 has '_compiled_includes' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
-    default => sub { {} },
+    is          => 'rw',
+    isa         => HashRef,
+    default     => sub { {} },
+    handles_via => 'Hash',
+    handles     => {
+        _get_compiled_include => 'get',
+        _add_compiled_include => 'set',
+        _include_is_compiled  => 'exists',
+    },
 );
-
-
-sub _get_compiled_include {
-    my $self = shift;
-    __hash_get( $self->_compiled_includes, @_ );
-}
-
-sub _add_compiled_include {
-    my $self = shift;
-    __hash_set( $self->_compiled_includes, @_ );
-}
-
-sub _include_is_compiled {
-    my $self = shift;
-    __hash_exists( $self->_compiled_includes, @_ );
-}
 
 has '_registered_includes' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
-    default => sub { {} },
+    is          => 'rw',
+    isa         => HashRef,
+    default     => sub { {} },
+    handles_via => 'Hash',
+    handles     => {
+        _add_registered_include => 'set',
+        _include_is_registered  => 'exists',
+    },
 );
-
-sub _include_is_registered {
-    my $self = shift;
-    __hash_exists( $self->_registered_includes, @_ );
-}
-
-sub _add_registered_include {
-    my $self = shift;
-    __hash_set( $self->_registered_includes, @_ );
-}
 
 =head1 METHODS
 

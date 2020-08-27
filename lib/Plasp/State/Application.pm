@@ -1,10 +1,11 @@
 package Plasp::State::Application;
 
 use Moo::Role;
+use Types::Standard qw(InstanceOf);
 
 has 'asp' => (
     is       => 'ro',
-    isa      => sub { die "$_[0] is not a Plasp object!" unless ref $_[0] eq 'Plasp' },
+    isa      => InstanceOf['Plasp'],
     required => 1,
     weak_ref => 1,
 );

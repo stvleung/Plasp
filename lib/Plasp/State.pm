@@ -3,22 +3,23 @@ package Plasp::State;
 use Module::Runtime qw(require_module);
 
 use Moo::Role;
+use Types::Standard qw(Object Str HashRef);
 
 for my $type ( qw(Application Session) ) {
     has "${type}Class" => (
         is      => 'rw',
-        isa     => sub { die "$_[0] is not a Str!" if ref $_[0] },
+        isa     => Str,
         default => "Plasp::$type",
     );
 
     has "${type}Config" => (
         is      => 'rw',
-        isa     => sub { die "$_[0] is not a HashRef!" unless ref $_[0] eq 'HASH' },
         default => sub { {} },
     );
 
     has "$type" => (
         is      => 'ro',
+        isa     => Object,
         clearer => "clear_$type",
         lazy    => 1,
         default => sub {
