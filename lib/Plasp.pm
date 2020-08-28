@@ -3,9 +3,11 @@ package Plasp;
 use Carp;
 use Digest::MD5 qw(md5_hex);
 use File::MMagic;
+use File::LibMagic;
 use Module::Runtime qw(require_module);
 use List::Util qw(all);
 use Path::Tiny;
+use Plasp::Exception::Code;
 use Plasp::Log;
 use Scalar::Util qw(blessed);
 use Type::Tiny;
@@ -76,7 +78,7 @@ has 'req' => (
 );
 
 has '_mm' => (
-    is      => 'lazy',
+    is      => 'ro',
     default => sub {
         my $mm = File::MMagic->new( '/etc/magic' );
         $mm->addFileExts( '\.xml$', 'text/xml' );
@@ -92,22 +94,19 @@ has '_mm' => (
     },
 );
 
-has '_magic' => ( is => 'lazy' );
-
-sub _build_magic {
-    my $class = "File::LibMagic";
-
-    require_module $class;
-
-    return $class->new( magic_file => '/etc/magic' );
-}
+has '_magic' => (
+    is      => 'ro',
+    default => sub {
+        return File::LibMagic->new( magic_file => '/etc/magic' );
+    },
+);
 
 =head1 CONFIGURATION
 
-You can configure Plasp in Catalyst under the C<Plasp> section
-of the configuration
+You can configure Plasp by calling the class method C<< $class->config >> and
+passing in a hash ref
 
-  __PACKAGE__->config({
+  MyApp->config({
     ApplicationRoot => '/var/www',
     DocumentRoot    => 'public',
     Global          => 'lib',
@@ -287,6 +286,32 @@ has 'XMLSubsMatch' => (
     },
 );
 
+=item Error404Path
+
+Path of the page in C<DocumentRoot> to serve when page not found. This page
+will go through ASP processing, so ensure this page is simple and does not have
+opportunity for error.
+
+=cut
+
+has 'Error404Path' => (
+    is      => 'ro',
+    isa     => Str,
+);
+
+=item Error500Path
+
+Path of the page in C<DocumentRoot> to serve when error in application, or in
+Plasp. This page will go through ASP processing, so ensure this page is simple
+and does not have opportunity for error.
+
+=cut
+
+has 'Error500Path' => (
+    is      => 'ro',
+    isa     => Str,
+);
+
 =item Debug
 
 Currently only a placeholder. Only effect is to turn on stacktrace on C<__DIE__>
@@ -328,11 +353,22 @@ has '_compile_checksum' => (
     },
 );
 
-has 'log' => (
-    is      => 'rw',
-    isa     => InstanceOf['Plasp::Log'],
-    default => sub { Plasp::Log->new },
-);
+# $self->log can be either a object method or class method.
+#
+# If called as an object method, then $asp object would be defined and
+# available, ie. during request processing
+#
+# Otherwise, if called as a class method, then don't use PSGI logger since
+# not available
+my $_log = Plasp::Log->new;
+
+sub log {
+    my ( $self ) = @_;
+
+    $_log->asp( $self ) if ref $self && ! $_log->asp;
+
+    return $_log;
+}
 
 has 'errors' => (
     is          => 'rw',
@@ -574,12 +610,16 @@ sub execute {
     }
     if ( $@ ) {
 
-        # Record errors if not $Response->End or $Response->Redirect
-        $self->error( "Error executing code: $@" ) unless (
-            blessed( $@ )
+        unless ( blessed( $@ )
             && ( $@->isa( 'Plasp::Exception::End' )
-                || $@->isa( 'Plasp::Exception::Redirect' ) )
-        );
+                || $@->isa( 'Plasp::Exception::Redirect' ) ) ) {
+
+            # Record errors if not $Response->End or $Response->Redirect
+            $self->error( "Error executing code: $@" );
+
+            # "Rethrow" the error
+            Plasp::Exception::Code->throw( $@ );
+        }
     }
 
     return @rv;
@@ -653,6 +693,8 @@ Joshua Chamas E<lt> asp-dev@chamas.com E<gt>
 =head1 SEE ALSO
 
 =over
+
+=item * L<Plasp::App>
 
 =item * L<Plack>
 

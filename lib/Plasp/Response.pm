@@ -501,7 +501,7 @@ sub End {
     Plasp::Exception::End->throw;
 }
 
-# TODO to implement or not to implement?
+# TODO will not implement
 sub ErrorDocument {
     my ( $self, $code, $uri ) = @_;
     $self->asp->log->warn( "\$Response->ErrorDocument has not been implemented!" );

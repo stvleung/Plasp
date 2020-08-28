@@ -47,14 +47,17 @@ class method and get a subroutine in return which will serve a PSGI application.
 You can pass in the configuration in C<new>
 
   $app = MyApp->new(
-    DocumentRoot  => 'root',
-    Global        => 'lib',
-    GlobalPackage => 'MyApp',
-    IncludesDir   => 'templates',
-    MailHost      => 'localhost',
-    MailFrom      => 'myapp@localhost',
-    XMLSubsMatch  => '(?:myapp):\w+',
-    Debug         => 0,
+    ApplicationRoot => '/var/www',
+    DocumentRoot    => 'root',
+    Global          => 'lib',
+    GlobalPackage   => 'MyApp',
+    IncludesDir     => 'templates',
+    MailHost        => 'localhost',
+    MailFrom        => 'myapp@localhost',
+    XMLSubsMatch    => '(?:myapp):\w+',
+    Error404Path    => '/error404.asp',
+    Error500Path    => '/error500.asp',
+    Debug           => 0,
   );
 
 =cut
@@ -79,10 +82,6 @@ or after initialization;
   MyApp->config(Global          => 'lib');
   MyApp->config(GlobalPackage   => 'MyApp');
   MyApp->config(IncludesDir     => 'templates');
-  MyApp->config(MailHost        => 'localhost');
-  MyApp->config(MailFrom        => 'myapp@localhost');
-  MyApp->config(XMLSubsMatch    => '(?:myapp):\w+');
-  MyApp->config(Debug           => 0);
 
 =cut
 
@@ -109,14 +108,11 @@ Alternatively, you can just call the C<psgi_app> class method, which is the
 same as calling C<<$class->new>> without passing in any configuration.
 
   MyApp->config(
-    DocumentRoot  => 'root',
-    Global        => 'lib',
-    GlobalPackage => 'MyApp',
-    IncludesDir   => 'templates',
-    MailHost      => 'localhost',
-    MailFrom      => 'myapp@localhost',
-    XMLSubsMatch  => '(?:myapp):\w+',
-    Debug         => 0,
+    ApplicationRoot => '/var/www',
+    DocumentRoot    => 'root',
+    Global          => 'lib',
+    GlobalPackage   => 'MyApp',
+    IncludesDir     => 'templates',
   );
 
   $app = MyApp->psgi_app;
@@ -157,7 +153,6 @@ sub psgi_app {
             $_asp->execute( $compiled->{code} );
             $_asp->GlobalASA->Script_OnFlush;
         } catch {
-
             if ( $_asp && blessed( $_ ) ) {
 
                 # If the file is not found, return HTTP 404
@@ -166,8 +161,12 @@ sub psgi_app {
                     # Construct not found response
                     my $resp = $_asp->Response;
                     $resp->Status( 404 );
-                    $resp->Body( '<!DOCTYPE html><html><head><title>Page Not Found</title></head><body><h1>Page Not Found</h1><p>Sorry, the page you are looking does not exist.</p></body></html>' );
-                    $resp->ContentType( 'text/html' );
+                    if ( $_asp->Error404Path ) {
+                        $resp->Include( path( $_asp->DocumentRoot, $_asp->Error404Path )->stringify );
+                    } else {
+                        $resp->Body( '<!DOCTYPE html><html><head><title>Page Not Found</title></head><body><h1>Page Not Found</h1><p>Sorry, the page you are looking does not exist.</p></body></html>' );
+                        $resp->ContentType( 'text/html' );
+                    }
 
                 # If error in other ASP code, return HTTP 500
                 } elsif ( $_->isa( 'Plasp::Exception::Code' )
@@ -176,26 +175,29 @@ sub psgi_app {
                     $_asp->error( "Encountered application error: $_" );
                 }
 
+                # Plasp application reported errors
                 if ( $_asp->has_errors ) {
-
                     # Construct error response
-                    print STDERR "[ERROR] Application error:\n$_\n";
-
                     my $resp = $_asp->Response;
                     $resp->Status( $resp->Status || 500 );
-                    $resp->Body( '<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Internal Server Error</h1><p>Sorry, the page you are looking for is currently unavailable.<br/>Please try again later.</p></body></html>' );
-                    $resp->ContentType( 'text/html' );
+                    if ( $_asp->Error500Path ) {
+                        $resp->Include( path( $_asp->DocumentRoot, $_asp->Error500Path )->stringify );
+                    } else {
+                        $resp->Body( '<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Internal Server Error</h1><p>Sorry, the page you are looking for is currently unavailable.<br/>Please try again later.</p></body></html>' );
+                        $resp->ContentType( 'text/html' );
+                    }
                 }
-            } else {
 
-                # Plasp error due to error in Plasp code.
-                print STDERR "[ERROR] Plasp error:\n$_\n";
+            # Plasp error due to error in Plasp code. $asp and $Response is not
+            # reliable. This implies a bug in Plasp.
+            } else {
+                Plasp->log->fatal( "Plasp error: $_" );
+
                 $status = 500;
                 $body   = sprintf '<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Internal Server Error</h1>%s</body></html>', $class->config->{Debug} ? "<pre>$_</pre>" : '';
-                push @headers, 'Content-Type' => 'text/html';
+                push @headers, 'Content-Type' => 'text/html' unless grep { /Content-Type/ } @headers;
             }
         } finally {
-
             if ( $_asp ) {
                 # Process the resulting response
                 my $resp = $_asp->Response;
@@ -233,13 +235,6 @@ sub psgi_app {
 
                 # Ensure destruction!
                 $_asp->cleanup;
-            } else {
-
-                # Plasp error due to error in Plasp configuration.
-                print STDERR "[ERROR] Plasp configuration error\n";
-                $status ||= 500;
-                $body   ||= sprintf '<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Internal Server Error</h1>%s</body></html>', $class->config->{Debug} ? '<p>Plasp configuration error.</p>' : '';
-                push @headers, 'Content-Type' => 'text/html' unless grep { /Content-Type/ } @headers;
             }
         };
 
