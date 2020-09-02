@@ -6,7 +6,7 @@ use HTTP::Date qw(time2str);
 use Path::Tiny;
 use Plasp;
 use Scalar::Util qw(blessed);
-use Try::Tiny;
+use Try::Catch;
 
 use Role::Tiny;
 use namespace::clean;
@@ -119,11 +119,50 @@ same as calling C<<$class->new>> without passing in any configuration.
 
 =cut
 
+my %_error_docs = (
+    'plasp_error' => '<!DOCTYPE html>
+<html>
+<head>
+    <title>Error</title>
+</head>
+<body>
+    <h1>Internal Server Error</h1><br/>
+    %s<
+</body>
+</html>',
+
+    '500_error' => '<!DOCTYPE html>
+<html>
+<head>
+<title>Error</title>
+</head>
+<body>
+    <h1>Internal Server Error</h1><br/>
+    <p>
+        Sorry, the page you are looking for is currently unavailable.<br/>
+        Please try again later.
+    </p>
+</body>
+</html>',
+
+    '404_not_found' => '<!DOCTYPE html>
+<html>
+<head>
+    <title>Page Not Found</title>
+</head>
+<body>
+    <h1>Page Not Found</h1><br/>
+    <p>Sorry, the page you are looking does not exist.</p>
+</body>
+</html>'
+);
+
 # Create a global variable to cache ASP object
 my $_asp;
 sub psgi_app {
     my $class = shift;
 
+    # Return a subroutine, which is called the PSGI app
     return sub {
         my $env = shift;
 
@@ -131,9 +170,10 @@ sub psgi_app {
         # populated with Request headers as in CGI
         local %ENV = %ENV;
 
-        my ( $status, @headers, $body );
+        # Initialize and keep compiled code in this scope;
+        my ( $compiled, $error_response );
 
-        try {
+        my $success = try {
             # Create new Plack::Request object
             my $req = Plack::Request->new( $env );
 
@@ -144,48 +184,30 @@ sub psgi_app {
                 $_asp = Plasp->new( %{$class->config}, req => $req );
             }
 
-            # Render the ASP page
             # Parse and compile the ASP code
-            my $compiled = $_asp->compile_file( path( $_asp->DocumentRoot, $req->path_info ) );
+            $compiled = $_asp->compile_file(
+                path( $_asp->DocumentRoot, $req->path_info )->stringify
+            );
 
-            # Execute code
-            $_asp->GlobalASA->Script_OnStart;
-            $_asp->execute( $compiled->{code} );
-            $_asp->GlobalASA->Script_OnFlush;
+            1;
         } catch {
+
             if ( $_asp && blessed( $_ ) ) {
 
-                # If the file is not found, return HTTP 404
+                # Handle not found exception
                 if ( $_->isa( 'Plasp::Exception::NotFound' ) ) {
+                    $error_response = _not_found_response()
+                } else {
 
-                    # Construct not found response
-                    my $resp = $_asp->Response;
-                    $resp->Status( 404 );
-                    if ( $_asp->Error404Path ) {
-                        $resp->Include( path( $_asp->DocumentRoot, $_asp->Error404Path )->stringify );
-                    } else {
-                        $resp->Body( '<!DOCTYPE html><html><head><title>Page Not Found</title></head><body><h1>Page Not Found</h1><p>Sorry, the page you are looking does not exist.</p></body></html>' );
-                        $resp->ContentType( 'text/html' );
-                    }
+                    # Handle code or compilation exception by loggin it
+                    $_asp->error( sprintf( "Encountered %s error: %s",
+                        $_->isa( 'Plasp::Exception::Code' )
+                            ? 'application code'
+                            : 'unknown compilation',
+                        $_
+                    ) );
 
-                # If error in other ASP code, return HTTP 500
-                } elsif ( $_->isa( 'Plasp::Exception::Code' )
-                    || ( !$_->isa( 'Plasp::Exception::End' )
-                        && !$_->isa( 'Plasp::Exception::Redirect' ) ) ) {
-                    $_asp->error( "Encountered application error: $_" );
-                }
-
-                # Plasp application reported errors
-                if ( $_asp->has_errors ) {
-                    # Construct error response
-                    my $resp = $_asp->Response;
-                    $resp->Status( $resp->Status || 500 );
-                    if ( $_asp->Error500Path ) {
-                        $resp->Include( path( $_asp->DocumentRoot, $_asp->Error500Path )->stringify );
-                    } else {
-                        $resp->Body( '<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Internal Server Error</h1><p>Sorry, the page you are looking for is currently unavailable.<br/>Please try again later.</p></body></html>' );
-                        $resp->ContentType( 'text/html' );
-                    }
+                    $error_response = _error_response( undef, '500_error' );
                 }
 
             # Plasp error due to error in Plasp code. $asp and $Response is not
@@ -193,58 +215,158 @@ sub psgi_app {
             } else {
                 Plasp->log->fatal( "Plasp error: $_" );
 
-                $status = 500;
-                $body   = sprintf '<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Internal Server Error</h1>%s</body></html>', $class->config->{Debug} ? "<pre>$_</pre>" : '';
-                push @headers, 'Content-Type' => 'text/html' unless grep { /Content-Type/ } @headers;
+                $error_response = _error_response(
+                    undef,
+                    'plasp_error',
+                    $class->config->{Debug}
+                        ? "<pre>$_</pre>"
+                        : ''
+                );
             }
-        } finally {
-            if ( $_asp ) {
-                # Process the resulting response
-                my $resp = $_asp->Response;
-                $status  = $resp->Status || 200;
-                $body    = $resp->Body;
 
-                # Process the response headers
-                # Set Content-Type header
-                my $content_type = $resp->ContentType;
-                my $charset      = $resp->Charset;
-                if ( $charset ) {
-                    $content_type .= "; charset=$charset";
-                    $body = Encode::encode( $charset, $body );
-                } elsif ( $content_type =~ /text|javascript|json/ ) {
-                    $body = Encode::encode( 'UTF-8', $body );
+            # Ensure return value is false to signify failure
+            return undef;
+        };
+
+        return $error_response unless $success;
+
+        # Define a callback once server is ready to write data to client. The
+        # callback is called and passed subroutine called a responder.
+        my $callback = sub {
+
+            # Setup a hash here holding references to various objects at this
+            # scope, so that the closures for calling the responder will be
+            # able to write to this scope.
+            my %refs = ( responder => shift );
+
+            # If a responder is passed in, that means streaming response is
+            # supported so pass a closure to write out headers and body
+            if ( $refs{responder} ) {
+                $_asp->Response->_headers_writer(
+                    sub { $refs{writer} = $refs{responder}->( \@_ ) }
+                );
+                $_asp->Response->_content_writer(
+                    sub { $refs{writer}->write( @_ ) }
+                );
+            }
+
+            $success = try {
+
+                # Execute the code, render the ASP page
+                $_asp->GlobalASA->Script_OnStart;
+                $_asp->execute( $compiled->{code} );
+
+                1;
+            } catch {
+                if ( blessed( $_ ) ) {
+                    if ( $_->isa( 'Plasp::Exception::Code' )
+                        || ( !$_->isa( 'Plasp::Exception::End' )
+                            && !$_->isa( 'Plasp::Exception::Redirect' ) ) ) {
+                        $_asp->error( "Encountered application error: $_" );
+                    }
+
+                    # Plasp application reported errors
+                    $error_response = _error_response(
+                        $refs{responder},
+                        '500_error'
+                    ) if $_asp->has_errors;
                 }
-                push @headers, 'Content-Type' => $content_type;
 
-                # Set the Cookies
-                push @headers, @{ $resp->CookiesHeaders };
+                return undef;
+            } finally {
+                if ( $_asp ) {
+                    # Do one final $Response->Flush
+                    my $resp = $_asp->Response;
+                    $resp->Flush;
 
-                # Set the Cache-Control
-                push @headers, Cache_Control => $resp->CacheControl;
+                    # Close the writer so as to conclude the response to the
+                    # client
+                    if ( $refs{writer} ) {
+                        $refs{writer}->close;
 
-                # Set the Expires header from either Expires or ExpiresAbsolute
-                # attribute
-                if ( $resp->Expires ) {
-                    push @headers, Expires => time2str( time + $resp->Expires );
-                } elsif ( $resp->ExpiresAbsolute ) {
-                    push @headers, Expires => $resp->ExpiresAbsolute;
+                    # If not using streaming response, then save response for
+                    # reference later
+                    } else {
+                        $refs{status}  = $resp->Status;
+                        $refs{headers} = $resp->Headers;
+                        $refs{body}    = [ $resp->Output ];
+                    }
+
+                    # Ensure destruction!
+                    $_asp->cleanup;
                 }
+            };
 
-                # Add any custom headers from the application
-                push @headers, @{ $resp->_headers };
-
-                # Ensure destruction!
-                $_asp->cleanup;
+            # If a responder was passed in, then no need to return anything,
+            # but otherwise need to return the PSGI three-element array
+            unless ( $refs{responder} ) {
+                return $success
+                    ? \( @refs{qw(status headers body)} )
+                    : $error_response;
             }
         };
 
-        return [ $status, \@headers, [ $body ] ]
+        if ( $_asp->req->env->{'psgi.streaming'} ) {
+
+            # Return the callback subroutine if streaming is supported
+            return $callback;
+        } else {
+
+            # Manually call the callback to get response
+            return $callback->();
+        }
+
     }
 }
 
-# Setup a session store global variable, to be created upon load
-my $_session_tmp_dir = tempdir( "/tmp/plasp-sess-$$-XXXXXX", CLEANUP => 1 );
-sub session_tmp_dir { return $_session_tmp_dir }
+# Construct error response
+sub _error_response {
+    my $responder = shift;
+    my $error_type = shift;
+
+    my $body = sprintf( $_error_docs{$error_type}, @_ );
+    if ( $_asp  ) {
+        $_asp->Response->Status( 500 );
+        $_asp->Response->ContentType( 'text/html' );
+
+        if ( $_asp->Error500Path ) {
+            my $compiled = $_asp->compile_file(
+                path( $_asp->DocumentRoot, $_asp->Error500Path )->stringify
+            );
+            $_asp->execute( $compiled->{code} );
+
+            $body = $_asp->Response->Output;
+        } else {
+
+            $_asp->Response->Output( $body );
+        }
+    }
+
+    # If a responder is defined, then the responder would already have written
+    # out the error Response, but otherwise return the three-element array
+    unless ( $responder ) {
+        return [ 500, [ 'Content-Type' => 'text/html' ], [ $body ] ];
+    }
+}
+
+# Construct not found response
+sub _not_found_response {
+    my $body;
+    if ( $_asp && $_asp->Error404Path ) {
+
+        my $compiled = $_asp->compile_file(
+            path( $_asp->DocumentRoot, $_asp->Error404Path )->stringify
+        );
+        $_asp->execute( $compiled->{code} );
+
+        $body = $_asp->Response->Output;
+    } else {
+        $body = $_error_docs{'404_not_found'};
+    }
+
+    return [ 404, [ 'Content-Type' => 'text/html' ], [ $body ] ];
+}
+
 
 1;
 
@@ -257,5 +379,3 @@ sub session_tmp_dir { return $_session_tmp_dir }
 =item * L<Plasp>
 
 =back
-
-1;

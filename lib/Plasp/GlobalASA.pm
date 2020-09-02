@@ -103,7 +103,7 @@ sub BUILD {
     return unless $self->exists;
 
     my $package      = $self->package;
-    my $filename     = $self->filename;
+    my $filename     = $self->filename->stringify;
     my $global       = $asp->Global;
     my $code         = read_file( $filename );
     my $match_events = join '|', @Routines;

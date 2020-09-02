@@ -458,7 +458,7 @@ sub BUILD {
     my @includes_dir;
     for ( @{ $self->IncludesDir } ) {
         if ( $_->is_relative ) {
-            push @includes_dir, path( $self->ApplicationRoot, $_ );
+            push @includes_dir, path( $self->ApplicationRoot, $_ )->stringify;
         }
         else {
             push @includes_dir, $_;
@@ -505,14 +505,14 @@ sub search_includes_dir {
         if ( $file->exists ) {
 
             # Don't forget to cache the results
-            return $self->_cache_include_file( $include => $file );
+            return $self->_cache_include_file( $include => $file->stringify );
         }
     }
 
     # For includes of absolute filesystem path
     my $file = path( $include );
     if ( $self->ApplicationRoot->subsumes( $file ) && $file->exists ) {
-        return $self->_cache_include_file( $include => $file );
+        return $self->_cache_include_file( $include => $file->stringify );
     }
 
     # Returning undef means file not found. Let calling method handle error
@@ -536,7 +536,8 @@ sub file_id {
     if ( length( $file ) >= 35 ) {
         push @id, substr( $file, length( $file ) - 35, 36 );
 
-        # only do the hex of the original file to create a unique identifier for the long id
+        # only do the hex of the original file to create a unique identifier
+        # for the long id
         push @id, 'x', md5_hex( $file . $checksum );
     } else {
         push @id, $file, 'x', $checksum;
@@ -591,21 +592,31 @@ sub execute {
             # Determine the MIME type of the content
             ## Suppress warnings from File::MMagic
             local $SIG{__WARN__} = sub {};
-            my $mimetype = $self->_mm->checktype_byfilename( $self->req->path_info );
+            my $mimetype = $self->_mm->checktype_byfilename(
+                $self->req->path_info
+            );
             if ( $mimetype =~ m{application/octet-stream} ) {
-                my $file = path( $self->DocumentRoot, $self->req->path_info );
-                $mimetype = $self->_magic->info_from_filename( "$file" )->{mime_type};
+                my $file = path(
+                    $self->DocumentRoot, $self->req->path_info
+                )->stringify;
+                $mimetype = $self->_magic->info_from_filename(
+                    $file
+                )->{mime_type};
             }
             $self->Response->ContentType( $mimetype );
         } else {
-            $self->error( "Could not execute because \$code is a ref, but not CODE or SCALAR!" );
+            $self->error(
+                "Could not execute because \$code is a ref, but not CODE or SCALAR!"
+            );
         }
     } else {
 
-        # Alternatively, execute a function in the ASP context given a string of
-        # the subroutine name
+        # Alternatively, execute a function in the ASP context given a string
+        # of the subroutine name
         # If absolute package already, then no need to set to package namespace
-        my $subid = ( $code =~ /::/ ) ? $code : $self->GlobalASA->package . '::' . $code;
+        my $subid = ( $code =~ /::/ )
+            ? $code
+            : $self->GlobalASA->package . '::' . $code;
         @rv = eval { &$subid; };
     }
     if ( $@ ) {
@@ -613,9 +624,6 @@ sub execute {
         unless ( blessed( $@ )
             && ( $@->isa( 'Plasp::Exception::End' )
                 || $@->isa( 'Plasp::Exception::Redirect' ) ) ) {
-
-            # Record errors if not $Response->End or $Response->Redirect
-            $self->error( "Error executing code: $@" );
 
             # "Rethrow" the error
             Plasp::Exception::Code->throw( $@ );
@@ -662,6 +670,11 @@ sub cleanup {
     $self->clear_Session;
     $self->clear_Response;
     $self->clear_Request;
+
+    # Clear request attributes
+    $self->clear_req;
+    $self->errors( [] );
+    $self->log->entries( [] );
 }
 
 # Clear remaining global objects in order

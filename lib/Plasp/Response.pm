@@ -12,7 +12,7 @@ use Tie::Handle;
 
 use Moo;
 use Sub::HandlesVia;
-use Types::Standard qw(InstanceOf Str Int Bool HashRef ArrayRef ScalarRef);
+use Types::Standard qw(InstanceOf Str Int Bool HashRef ArrayRef ScalarRef CodeRef);
 use namespace::clean;
 
 has 'asp' => (
@@ -28,6 +28,17 @@ has '_flushed_offset' => (
     default => 0,
 );
 
+# Keep track of if headers have been written out
+has '_headers_written' => (
+    is          => 'rw',
+    isa         => Bool,
+    default     => 0,
+    handles_via => 'Bool',
+    handles     => {
+        _set_headers_written => 'set',
+    },
+);
+
 =head1 NAME
 
 Plasp::Response - $Response Object
@@ -38,7 +49,7 @@ Plasp::Response - $Response Object
 
   my $resp = Plasp::Response->new(asp => $asp);
   $resp->Write('<h1>Hello World!</h1>');
-  my $body = $resp->Body;
+  my $body = $resp->Output;
 
 =head1 DESCRIPTION
 
@@ -70,24 +81,27 @@ place before content is flushed to the client web browser.
 has 'BinaryRef' => (
     is      => 'rw',
     isa     => ScalarRef,
-    default => sub { \( shift->Body ) }
+    default => sub { \( shift->Output ) }
 );
 
-has 'Body' => (
+# Store the buffered output as a Str attritube
+has 'Output' => (
     is          => 'rw',
     isa         => Str,
     default     => '',
+    clearer     => 'clear_Output',
     handles_via => 'String',
     handles     => {
-        BodyLength => 'length',
-        BodySubstr => 'substr',
-        Write      => 'append',
+        OutputLength => 'length',
+        OutputSubstr => 'substr',
+        Write        => 'append',
     },
 );
 
-# This attribute has no effect
+# This attribute has no effect output will always be buffered, even in cases
+# of streaming response.
 has 'Buffer' => (
-    is      => 'rw',
+    is      => 'ro',
     default => 1,
 );
 
@@ -103,6 +117,12 @@ has 'CacheControl' => (
     isa     => Str,
     default => 'private',
 );
+
+before 'CacheControl' => sub {
+    my $self = shift;
+    $self->asp->log->warn( 'Headers already written! Setting CacheControl has no effect!' )
+        if scalar( @_ ) && $self->_headers_written;
+};
 
 =item $Response->{Charset}
 
@@ -120,9 +140,15 @@ has 'Charset' => (
     default => '',
 );
 
+before 'Charset' => sub {
+    my $self = shift;
+    $self->asp->log->warn( 'Headers already written! Setting Charset has no effect!' )
+        if scalar( @_ ) && $self->_headers_written;
+};
+
 # This attribute has no effect
 has 'Clean' => (
-    is      => 'rw',
+    is      => 'ro',
     isa     => Int,
     default => 0,
 );
@@ -140,6 +166,12 @@ has 'ContentType' => (
     default => 'text/html',
 );
 
+before 'ContentType' => sub {
+    my $self = shift;
+    $self->asp->log->warn( 'Headers already written! Setting ContentType has no effect!' )
+        if scalar( @_ ) && $self->_headers_written;
+};
+
 =item $Response->{Expires}
 
 Sends a response header to the client indicating the $time in SECONDS in which
@@ -154,15 +186,35 @@ has 'Expires' => (
     default => 0,
 );
 
+before 'Expires' => sub {
+    my $self = shift;
+    $self->asp->log->warn( 'Headers already written! Setting Expires has no effect!' )
+        if scalar( @_ ) && $self->_headers_written;
+};
+
+=item $Response->{ExpiresAbsolute}
+
+Sends a response header to the client with $date being an absolute time to
+expire. Formats accepted are all those accepted by HTTP::Date::str2time(),
+e.g.
+
+=cut
+
 has 'ExpiresAbsolute' => (
     is      => 'rw',
     isa     => sub { die "$_[0] is not a supported date format!" if $_[0] && Str->check( $_[0] ) && ! str2time $_[0] },
     default => '',
 );
 
+before 'ExpiresAbsolute' => sub {
+    my $self = shift;
+    $self->asp->log->warn( 'Headers already written! Setting ExpiresAbsolute has no effect!' )
+        if scalar( @_ ) && $self->_headers_written;
+};
+
 # This attribute has no effect
 has 'FormFill' => (
-    is      => 'rw',
+    is      => 'ro',
     isa     => Bool,
     default => 0,
 );
@@ -184,14 +236,14 @@ connection status without calling first a C<< $Response->Flush >>
 
 # This attribute has no effect
 has 'IsClientConnected' => (
-    is      => 'rw',
+    is      => 'ro',
     isa     => Bool,
     default => 1,
 );
 
 # This attribute has no effect
 has 'PICS' => (
-    is      => 'rw',
+    is      => 'ro',
     isa     => Str,
     default => '',
 );
@@ -209,12 +261,18 @@ has 'Status' => (
     default => 0,
 );
 
+before 'Status' => sub {
+    my $self = shift;
+    $self->asp->log->warn( 'Headers already written! Setting Status has no effect!' )
+        if scalar( @_ ) && $self->_headers_written;
+};
+
 sub BUILD {
     my ( $self ) = @_;
 
     no warnings 'redefine';
     *TIEHANDLE = sub {$self};
-    $self->{BinaryRef} = \( $self->{Body} );
+    $self->{BinaryRef} = \( $self->{Output} );
 
     # Due to problem mentioned above in the builder methods, we are calling
     # these attributes to populate the values for the hash key to be available
@@ -234,7 +292,7 @@ the main page is sent.
 
 =cut
 
-has '_headers' => (
+has 'Headers' => (
     is      => 'rw',
     isa     => ArrayRef
     default => sub { [ ] },
@@ -242,6 +300,11 @@ has '_headers' => (
 
 sub AddHeader {
     my ( $self, $name, $value ) = @_;
+
+    $self->asp->log->warn( sprintf(
+        'Headers already written! Calling AddHeader with %s %s has no effect!',
+        $name, $value
+    ) ) if $self->_headers_written;
 
     # Don't duplicate these headers, set them for later
     if ( lc( $name ) eq 'content-type' ) {
@@ -251,7 +314,7 @@ sub AddHeader {
     } elsif ( lc( $name ) eq 'expires' ) {
         $self->ExpiresAbsolute( $value );
     } else {
-        push @{ $self->_headers }, $name => $value;
+        push @{ $self->Headers }, $name => $value;
     }
 }
 
@@ -297,8 +360,20 @@ Erases buffered ASP output.
 
 sub Clear {
     my ( $self ) = @_;
-    defined $self->Body && $self->Body( $self->BodySubstr( 0, $self->_flushed_offset ) );
-    $self->{BinaryRef} = \( $self->{Body} );
+
+    # If a _content_writer is defined, then no need to keep track of flushed
+    # offset, simply clear Output buffer
+    if ( $self->_content_writer ) {
+        $self->clear_Output;
+
+    # Otherwise, keep track of last flushed offset and clear everything after
+    # that point.
+    } else {
+        defined $self->Output && $self->Output( $self->OutputSubstr( 0, $self->_flushed_offset ) );
+    }
+
+    $self->{BinaryRef} = \( $self->{Output} );
+
     return;
 }
 
@@ -379,6 +454,12 @@ has 'Cookies' => (
         _set_Cookie => 'set',
     },
 );
+
+before '_set_Cookie' => sub {
+    my $self = shift;
+    $self->asp->log->warn( 'Headers already written! Setting Cookies has no effect!' )
+        if $self->_headers_written;
+};
 
 sub Cookies {
     my ( $self, $name, @cookie ) = @_;
@@ -514,10 +595,84 @@ Sends buffered output to client and clears buffer.
 
 =cut
 
+# A _headers_writer is a reference to a subroutine that takes two arguments:
+# ( $status, $headers_array_ref )
+has '_headers_writer' => (
+    is  => 'rw',
+    isa => CodeRef,
+);
+
+# A _content_writer is a reference to a subroutine that takes one argument:
+# ( $data )
+has '_content_writer' => (
+    is  => 'rw',
+    isa => CodeRef,
+);
+
 sub Flush {
     my ( $self ) = @_;
     $self->asp->GlobalASA->Script_OnFlush;
-    $self->_flushed_offset( $self->BodyLength );
+
+    # If this is the first Flush, need to write out the headers and begin the
+    # response.
+    unless ( $self->_headers_written ) {
+
+        # Process the resulting response
+        $self->Status || $self->Status( 200 );
+
+        # Process the response headers
+        # Set Content-Type header
+        my $charset      = $self->Charset;
+        my $content_type = $self->ContentType;
+        $content_type .= "; charset=$charset" if $charset;
+        push @{ $self->Headers }, 'Content-Type' => $content_type;
+
+        # Set the Cookies
+        push @{ $self->Headers }, @{ $self->CookiesHeaders };
+
+        # Set the Cache-Control
+        push @{ $self->Headers }, 'Cache-Control' => $self->CacheControl;
+
+        # Set the Expires header from either Expires or ExpiresAbsolute
+        # attribute
+        if ( $self->Expires ) {
+            push @{ $self->Headers }, Expires => time2str( time + $self->Expires );
+        } elsif ( $self->ExpiresAbsolute ) {
+            push @{ $self->Headers }, Expires => $self->ExpiresAbsolute;
+        }
+
+        # In the case that streaming response is supported, a _headers_writer
+        # should be defined. If so, use it to write out the Status and Headers
+        if ( $self->_headers_writer ) {
+            $self->_headers_writer->( $self->Status, $self->Headers );
+        }
+
+        # Headers are written, so don't write them out again, even if not
+        # streaming response
+        $self->_set_headers_written
+    }
+
+    my $body = $self->Output;
+    if ( my $charset = $self->Charset ) {
+        $body = Encode::encode( $charset, $body );
+    } elsif ( $self->ContentType =~ /text|javascript|json/ ) {
+        $body = Encode::encode( 'UTF-8', $body );
+    }
+
+    # In the case that streaming response is supported, a _content_writer
+    # should be defined. If so, use it to write out the body, then clear
+    # Output buffer.
+    if ( $self->_content_writer ) {
+        $self->_content_writer->( $body );
+        $self->Clear;
+
+    # If streaming response not supported, then keep track of a flushed offset
+    # and save the output up to that point.
+    } else {
+        $self->_flushed_offset( $self->OutputLength );
+    }
+
+
 }
 
 =item $Response->Include($filename, @args)
@@ -670,17 +825,17 @@ copy. You may dereference the data with the $$string_ref notation.
 sub TrapInclude {
     my ( $self, $include, @args ) = @_;
 
-    my $saved = $self->Body;
+    my $saved = $self->Output;
     $self->Clear;
 
     no warnings 'redefine';
     local *Plasp::Response::Flush = sub { };
-    local $self->{BinaryRef} = \( $self->{Body} );
+    local $self->{BinaryRef} = \( $self->{Output} );
 
     $self->Include( $include, @args );
-    my $trapped = $self->Body;
+    my $trapped = $self->Output;
 
-    $self->Body( $saved );
+    $self->Output( $saved );
 
     return \$trapped;
 }

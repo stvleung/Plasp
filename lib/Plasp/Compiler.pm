@@ -128,7 +128,7 @@ C<IncludesDir> and parse it, and assign it a C<$subid> based on it's filename.
 sub compile_file {
     my ( $self, $file ) = @_;
 
-    Plasp::Exception::NotFound->throw unless ( -r $file );
+    Plasp::Exception::NotFound->throw unless -r $file;
 
     my $id = $self->file_id( $file );
     my $subid = join( '', $self->GlobalASA->package, '::', $id, 'xINC' );

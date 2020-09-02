@@ -115,7 +115,9 @@ ASP API extension.
 
 sub File {
     my ( $self ) = @_;
-    return path( $self->asp->DocumentRoot, $self->req->path_info );
+    return path(
+        $self->asp->DocumentRoot, $self->req->path_info
+    )->absolute->stringify;
 }
 
 =item $Server->GetLastError()
@@ -204,7 +206,7 @@ C<"/"> are fine arguments to C<MapPath>, but C<http://localhost> would not be.
 
 sub MapPath {
     my ( $self, $url ) = @_;
-    return path( $self->asp->DocumentRoot, URI->new( $url )->path );
+    return path( $self->asp->DocumentRoot, URI->new( $url )->path )->stringify;
 }
 
 =item $Server->Mail(\%mail, %smtp_args);
@@ -263,7 +265,7 @@ sub Mail {
 
     return 0 unless $smtp;
 
-    my ( $from ) = split( /\s*,\s*/, ( $mail->{From} || '' ) );    # just the first one
+    my ( $from ) = split( /\s*,\s*/, ( $mail->{From} || '' ) ); # just the first one
     $smtp->mail( $from || $self->asp->MailFrom || return 0 );
 
     my @to;

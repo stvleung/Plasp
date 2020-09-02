@@ -67,8 +67,8 @@ has 'entries' => (
 
 # Store loggers, but only define them when context is right. See _get_loggers
 has '_loggers' => (
-    is => 'rw',
-    isa => HashRef,
+    is      => 'rw',
+    isa     => HashRef,
     default => sub { {} },
 );
 
