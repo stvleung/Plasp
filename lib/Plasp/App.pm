@@ -21,9 +21,14 @@ In C<MyApp.pm>
 
   package MyApp;
 
-  use Role::Tiny::With;
+  use Moo;
 
   with 'Plasp::App';
+
+  around new => sub {
+    my ( $orig, $class ) = ( shift, shift );
+    $class->$orig( @_ );
+  };
 
   1;
 
@@ -61,6 +66,15 @@ You can pass in the configuration in C<new>
   );
 
 =cut
+
+around BUILDARGS => sub {
+    my ( $orig, $class, @args ) = @_;
+
+    # Don't pass args to constructor. Instead pass to
+    $class->config( @args );
+
+    return $class->$orig();
+};
 
 sub new {
     my ( $class, @args ) = @_;
@@ -126,8 +140,8 @@ my %_error_docs = (
     <title>Error</title>
 </head>
 <body>
-    <h1>Internal Server Error</h1><br/>
-    %s<
+    <h1>Internal Server Error</h1>
+    %s
 </body>
 </html>',
 
@@ -137,7 +151,7 @@ my %_error_docs = (
 <title>Error</title>
 </head>
 <body>
-    <h1>Internal Server Error</h1><br/>
+    <h1>Internal Server Error</h1>
     <p>
         Sorry, the page you are looking for is currently unavailable.<br/>
         Please try again later.
@@ -151,7 +165,7 @@ my %_error_docs = (
     <title>Page Not Found</title>
 </head>
 <body>
-    <h1>Page Not Found</h1><br/>
+    <h1>Page Not Found</h1>
     <p>Sorry, the page you are looking does not exist.</p>
 </body>
 </html>'

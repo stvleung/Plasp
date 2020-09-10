@@ -4,7 +4,7 @@ use Moo::Role;
 use Sub::HandlesVia;
 use Types::Standard qw(InstanceOf Bool Str);
 
-requires qw(_fetch_session _store_session _delete_session);
+requires qw(_fetch_session);
 
 has 'asp' => (
     is       => 'ro',
@@ -12,7 +12,6 @@ has 'asp' => (
     required => 1,
     weak_ref => 1,
 );
-
 
 =head1 NAME
 
@@ -23,10 +22,6 @@ Plasp::State::Session - Role for $Session objects
   package MyApp::Session;
 
   with 'Plasp::State::Session';
-
-  sub _fetch_session { ... }
-  sub _store_session { ... }
-  sub _delete_session { ... }
 
 =head1 DESCRIPTION
 
@@ -179,15 +174,6 @@ sub UnLock {
     $self->asp->log->warn( "\$Session->UnLock has not been implemented!" );
     return;
 }
-
-=item $Session->Flush()
-
-Not implemented.
-
-=cut
-
-# TODO: will not implement; not part of API so just no-op
-sub Flush { }
 
 1;
 

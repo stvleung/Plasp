@@ -81,6 +81,7 @@ best be served under a secure web server.
 sub GetSession {
     my ( $self, $sess_id ) = @_;
 
+    # This _fetch_session method might not be implemented or possible
     return $self->asp->Session->_fetch_session( $sess_id );
 }
 

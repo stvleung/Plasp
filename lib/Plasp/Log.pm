@@ -89,7 +89,7 @@ sub _get_logger {
     my ( $self ) = @_;
 
     # Logging for while processing requests
-    if ( $self->asp && $self->asp->req ) {
+    if ( ref $self->asp eq 'Plasp' && $self->asp->req ) {
 
         # If a logger is defined by PSGI, then use it
         if ( $self->asp->req->env->{'psgix.logger'} ) {

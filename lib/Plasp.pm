@@ -647,12 +647,8 @@ sub cleanup {
     $self->GlobalASA->Script_OnEnd;
 
     # Clean up abandoned $Session, which marks the end of the $Session and so
-    # trigger Session_OnEnd. Additionally, need to remove session from store.
-    if ( $self->Session->IsAbandoned ) {
-        $self->GlobalASA->Session_OnEnd;
-
-        $self->Session->_delete_session( $self->Session->SessionID );
-    }
+    # trigger Session_OnEnd
+    $self->GlobalASA->Session_OnEnd if $self->Session->IsAbandoned;
 
     # Remove more references in order to get things destroyed
     undef &Plasp::Response::TIEHANDLE;
