@@ -383,7 +383,7 @@ has 'errors' => (
 sub error {
     my $self = shift;
     $self->log->error( @_ );
-    push @{$self->errors}, @_;
+    push @{$self->errors}, $_[0];
 }
 
 =head1 OBJECTS
@@ -576,8 +576,6 @@ sub execute {
     # Response class
     tie local *STDOUT, 'Plasp::Response';
 
-    local $SIG{__WARN__} = \&Carp::cluck   if $self->Debug;
-    local $SIG{__DIE__}  = \&Carp::confess if $self->Debug;
     my @rv;
     if ( my $reftype = ref $code ) {
         if ( $reftype eq 'CODE' ) {

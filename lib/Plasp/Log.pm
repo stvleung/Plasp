@@ -101,7 +101,7 @@ sub _get_logger {
                 my ( $entry ) = @_;
                 my ( $level, $message ) = @$entry{qw(level message)};
                 if ( $levels{$level} >= $self->level ) {
-                    my $stream = $self->asp->req->env->{'psgi.errors'}->print(
+                    $self->asp->req->env->{'psgi.errors'}->print(
                         sprintf( "[%s] %s\n", uc( $level ), $message )
                     );
                 }
@@ -120,104 +120,104 @@ sub _get_logger {
     }
 }
 
-=item $log->debug( @messages )
+=item $log->debug( $message, %context_values )
 
 Add debug log messages into log and prints to logger
 
 =cut
 
 sub debug {
-    my $self = shift;
-    my $logger = $self->_get_logger;
+    my $self    = shift;
+    my $message = shift;
+    my $logger  = $self->_get_logger;
 
-    for ( @_ ) {
-        my $entry = {
-            level   => 'debug',
-            message => $_,
-        };
-        push @{$self->entries}, $entry;
-        $logger->( $entry );
-    }
+    my $entry = {
+        level   => 'debug',
+        message => $message,
+        @_,
+    };
+    push @{$self->entries}, $entry;
+    $logger->( $entry );
 }
 
-=item $log->info( @messages )
+=item $log->info( $message, %context_values )
 
 Add info log messages into log and prints to logger
 
 =cut
 
 sub info {
-    my $self = shift;
-    my $logger = $self->_get_logger;
+    my $self    = shift;
+    my $message = shift;
+    my $logger  = $self->_get_logger;
 
-    for ( @_ ) {
-        my $entry = {
-            level   => 'info',
-            message => $_,
-        };
-        push @{$self->entries}, $entry;
-        $logger->( $entry );
-    }
+    my $entry = {
+        level   => 'info',
+        message => $message,
+        @_,
+    };
+    push @{$self->entries}, $entry;
+    $logger->( $entry );
 }
 
-=item $log->warn( @messages )
+=item $log->warn( $message, %context_values )
 
 Add warn log messages into log and prints to logger
 
 =cut
 
 sub warn {
-    my $self = shift;
-    my $logger = $self->_get_logger;
+    my $self    = shift;
+    my $message = shift;
+    my $logger  = $self->_get_logger;
 
-    for ( @_ ) {
-        my $entry = {
-            level   => 'warn',
-            message => $_,
-        };
-        push @{$self->entries}, $entry;
-        $logger->( $entry );
-    }
+    my $entry = {
+        level   => 'warn',
+        message => $message,
+        @_,
+    };
+    push @{$self->entries}, $entry;
+    $logger->( $entry );
 }
 
-=item $log->error( @messages )
+=item $log->error( $message, %context_values )
 
 Add error log messages into log and prints to logger
 
 =cut
 
 sub error {
-    my $self = shift;
-    my $logger = $self->_get_logger;
+    my $self    = shift;
+    my $message = shift;
+    my $logger  = $self->_get_logger;
 
-    for ( @_ ) {
-        my $entry = {
-            level   => 'error',
-            message => $_,
-        };
-        push @{$self->entries}, $entry;
-        $logger->( $entry );
-    }
+    my $entry = {
+        level   => 'error',
+        message => $message,
+        @_,
+    };
+    push @{$self->entries}, $entry;
+    $logger->( $entry );
 }
 
-=item $log->error( @messages )
+=item $log->fatal( $message, %context_values )
 
-Add error log messages into log and prints to logger
+Add fatal log messages into log and prints to logger
 
 =cut
 
 sub fatal {
-    my $self = shift;
-    my $logger = $self->_get_logger;
+    my $self    = shift;
+    my $message = shift;
+    my $logger  = $self->_get_logger;
 
-    for ( @_ ) {
-        my $entry = {
-            level   => 'fatal',
-            message => $_,
-        };
-        push @{$self->entries}, $entry;
-        $logger->( $entry );
-    }
+    my $entry = {
+        level   => 'fatal',
+        message => $message,
+        @_,
+    };
+    push @{$self->entries}, $entry;
+    $logger->( $entry );
 }
 
 1;

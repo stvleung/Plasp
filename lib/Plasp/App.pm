@@ -1,5 +1,6 @@
 package Plasp::App;
 
+use Devel::StackTrace;
 use Encode;
 use File::Temp qw(tempdir);
 use HTTP::Date qw(time2str);
@@ -264,7 +265,26 @@ sub psgi_app {
                 );
             }
 
+            # Keep the stacktrace available for exception processing
+            my $stack_trace;
             $success = try {
+                local $SIG{__DIE__} = sub {
+                    $stack_trace = Devel::StackTrace->new(
+                        skip_frames    => 1,
+                        indent         => 1,
+                        ignore_package => __PACKAGE__,
+                    )->as_string;
+                };
+                local $SIG{__WARN__} = sub {
+                    $_asp->log->warn(
+                        $_[0],
+                        stack_trace => Devel::StackTrace->new(
+                            skip_frames    => 1,
+                            indent         => 1,
+                            ignore_package => __PACKAGE__,
+                        )->as_string
+                    );
+                };
 
                 # Execute the code, render the ASP page
                 $_asp->GlobalASA->Script_OnStart;
@@ -276,7 +296,10 @@ sub psgi_app {
                     if ( $_->isa( 'Plasp::Exception::Code' )
                         || ( !$_->isa( 'Plasp::Exception::End' )
                             && !$_->isa( 'Plasp::Exception::Redirect' ) ) ) {
-                        $_asp->error( "Encountered application error: $_" );
+                        $_asp->error(
+                            "Encountered application error: $_",
+                            stack_trace => $stack_trace,
+                        );
                     }
 
                     # Plasp application reported errors

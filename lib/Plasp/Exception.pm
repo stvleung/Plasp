@@ -1,6 +1,5 @@
 package Plasp::Exception;
 
-use Carp;
 use overload
     q{""}    => sub { $_[0]->as_string },
     fallback => 1;
@@ -81,8 +80,7 @@ Throws a fatal exception.
 sub throw {
     my $class = shift;
     my $error = $class->new(@_);
-    local $Carp::CarpLevel = 1;
-    croak $error;
+    die $error;
 }
 
 =head2 rethrow( $exception )
