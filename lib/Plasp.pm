@@ -295,8 +295,8 @@ opportunity for error.
 =cut
 
 has 'Error404Path' => (
-    is      => 'ro',
-    isa     => Str,
+    is  => 'ro',
+    isa => Str,
 );
 
 =item Error500Path
@@ -308,8 +308,25 @@ and does not have opportunity for error.
 =cut
 
 has 'Error500Path' => (
+    is  => 'ro',
+    isa => Str,
+);
+
+=item FormFill
+
+default 0, if true will auto fill HTML forms with values from $Request->Form().
+This functionality is provided by use of L<HTML::FillInForm::ForceUTF8>. For
+more information please see "perldoc HTML::FillInForm::ForceUTF8"
+
+This feature can be enabled on a per form basis at runtime with
+C<<$Response->{FormFill} = 1>>
+
+=cut
+
+has 'FormFill' => (
     is      => 'ro',
-    isa     => Str,
+    isa     => Bool,
+    default => 0,
 );
 
 =item Debug
