@@ -5,6 +5,7 @@ use Encode;
 use File::Temp qw(tempdir);
 use HTTP::Date qw(time2str);
 use Path::Tiny;
+use Plack::Request;
 use Plasp;
 use Scalar::Util qw(blessed);
 use Try::Catch;
@@ -120,7 +121,7 @@ sub config {
 =item $class->psgi_app
 
 Alternatively, you can just call the C<psgi_app> class method, which is the
-same as calling C<<$class->new>> without passing in any configuration.
+same as calling C<< $class->new >> without passing in any configuration.
 
   MyApp->config(
     ApplicationRoot => '/var/www',

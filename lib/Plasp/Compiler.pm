@@ -19,8 +19,8 @@ Plasp::Compiler - Role for Plasp providing code compilation
 
 =head1 SYNOPSIS
 
-  use Plasp;
-  with 'Plasp::Compiler';
+  package Plasp;
+  with 'Plasp::Parser', 'Plasp::Compiler';
 
   sub execute {
     my ($self, $scriptref) = @_;

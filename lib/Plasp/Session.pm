@@ -31,7 +31,7 @@ A Plasp::Session composes the L<Plasp::State::Session> role, which implements
 the API a C<$Session> object. Please refer to L<Plasp::State::Session> for the
 C<$Session> API.
 
-Plasp::Session uses the C<<$env->{'psgix.session'}>> hash provided by Plack.
+Plasp::Session uses the C<< $env->{'psgix.session'} >> hash provided by Plack.
 Therefore, further configuration is handled as middleware, in the C<app.psgi>
 file.
 
@@ -88,8 +88,22 @@ around 'Abandon' => sub {
 };
 
 # Unfortunately, this class cannot fetch a desired session by session key
-# because the store is abstracted out by PSGI. This will be a no-op.
-sub _fetch_session {}
+# because the store is abstracted out by PSGI. However, if the request
+# session key is the same as the current session, then we can return it.
+sub _fetch_session {
+    my ( $self, $session_id ) = @_;
+    my $env = $self->asp->req->env;
+
+    if ( $session_id eq $env->{'psgix.session.options'}{id} ) {
+        my %session = %{ $env->{'psgix.session'} };
+
+        # Remove internal values (that shouldn't get stored)
+        delete $session{asp};
+        delete $session{_is_new};
+
+        return \%session;
+    }
+}
 
 1;
 

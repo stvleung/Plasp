@@ -7,7 +7,7 @@ use Plasp::Exception::Redirect;
 use CGI::Simple::Cookie;
 use Data::Dumper;
 use HTML::FillInForm::ForceUTF8;
-use HTTP::Date qw(str2time);
+use HTTP::Date qw(str2time time2str);
 use List::Util qw(all);
 use Scalar::Util qw(blessed);
 use Tie::Handle;
@@ -533,7 +533,7 @@ sub CookiesHeaders {
             $hash{-value} = $cookie;
         }
 
-        push @headers, 'Set-Cookie', CGI::Simple::Cookie->new( %hash )->as_string;
+        push @headers, 'Set-Cookie' => CGI::Simple::Cookie->new( %hash )->as_string;
     }
 
     return \@headers;
@@ -580,7 +580,7 @@ has 'Debug' => (
 
 sub Debug {
     my ( $self, @args ) = @_;
-    local $Data::Dumper::Maxdepth = 1;
+    local $Data::Dumper::Maxdepth = 2;
     $self->AppendToLog( Dumper( \@args ) );
 }
 
@@ -662,7 +662,7 @@ sub Flush {
 
         # Headers are written, so don't write them out again, even if not
         # streaming response
-        $self->_set_headers_written
+        $self->_set_headers_written;
     }
 
     my $body = $self->Output;

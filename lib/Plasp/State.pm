@@ -30,7 +30,9 @@ objects in the ASP object.
 
 =head1 Attributes
 
-=over ApplicationClass
+=over
+
+=item ApplicationClass
 
 A string referencing the class to use to instatiate a new $Application object.
 Defaults to C<'Plasp::Application'>.
@@ -43,7 +45,7 @@ has 'ApplicationClass' => (
     default => "Plasp::Application",
 );
 
-=over ApplicationConfig
+=item ApplicationConfig
 
 A hash reference to pass into the constructor of the Application class.
 Defaults to an empty hash reference.
@@ -55,10 +57,10 @@ has "ApplicationConfig" => (
     default => sub { {} },
 );
 
-=over Application
+=item Application
 
 A reference to the actual $Application global object. Defaults to
-C<<Plasp::Application->new>>.
+C<< Plasp::Application->new >>.
 
 =cut
 
@@ -79,7 +81,7 @@ has "Application" => (
     }
 );
 
-=over SessionClass
+=item SessionClass
 
 A string referencing the class to use to instatiate a new $Application object.
 Defaults to C<'Plasp::Session'>.
@@ -92,7 +94,7 @@ has 'SessionClass' => (
     default => "Plasp::Session",
 );
 
-=over ApplicationConfig
+=item ApplicationConfig
 
 A hash reference to pass into the constructor of the Application class.
 Defaults to an empty hash reference.
@@ -104,10 +106,10 @@ has "SessionConfig" => (
     default => sub { {} },
 );
 
-=over Session
+=item Session
 
 A reference to the actual $Session global object. Defaults to
-C<<Plasp::Session->new>>.
+C<< Plasp::Session->new >>.
 
 =cut
 

@@ -16,7 +16,7 @@ Plasp::Parser - Role for Plasp providing code parsing
 
 =head1 SYNOPSIS
 
-  use Plasp;
+  package Plasp;
   with 'Plasp::Compiler', 'Plasp::Parser';
 
   sub execute {

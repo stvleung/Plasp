@@ -1,0 +1,50 @@
+requires 'Carp';
+requires 'CGI::Simple::Cookie';
+requires 'Digest::MD5';
+requires 'File::LibMagic';
+requires 'File::MMagic';
+requires 'File::Slurp';
+requires 'HTML::Entities';
+requires 'HTML::FillInForm::ForceUTF8';
+requires 'HTTP::Date';
+requires 'List::Util';
+requires 'Module::Runtime';
+requires 'Moo';
+requires 'Path::Tiny';
+requires 'Plack';
+requires 'Plack::Util';
+requires 'Scalar::Util';
+requires 'Sub::HandlesVia';
+requires 'Tie::Handle';
+requires 'Try::Catch';
+requires 'Types::Path::Tiny';
+requires 'Types::Standard';
+requires 'URI';
+requires 'URI::Escape';
+requires 'namespace::clean';
+requires 'parent';
+requires 'perl', '5.010';
+
+on build => sub {
+    requires 'Class::MOP';
+    requires 'DateTime';
+    requires 'ExtUtils::MakeMaker', '6.59';
+    requires 'File::Temp';
+    requires 'HTTP::Cookies';
+    requires 'HTTP::Headers';
+    requires 'HTTP::Request::Common';
+    requires 'Plack::Test';
+    requires 'Test::Exception';
+    requires 'Test::More';
+    requires 'Text::Lorem';
+};
+
+on develop => sub {
+    requires 'Pod::Coverage::TrustPod';
+    requires 'Test::CPAN::Meta';
+    requires 'Test::Kwalitee::Extra';
+    requires 'Test::MinimumVersion::Fast', '0.04';
+    requires 'Test::PAUSE::Permissions', '0.04';
+    requires 'Test::Pod', '1.41';
+    requires 'Test::Spellunker', 'v0.2.7';
+};

@@ -125,9 +125,11 @@ C<< $Request->Form() >> data will also be available as normal.
 
 sub BinaryRead {
     my ( $self, $length ) = @_;
-    my $body  = $self->asp->req->body;
+    my $req = $self->asp->req;
+    return if $req->content_type =~ /multipart/;
+    my $body  = $req->body;
     my $buffer = '';
-    $length ||= $self->asp->req->content_length;
+    $length ||= $req->content_length;
     $body->read( $buffer, $length );
     return $buffer;
 }

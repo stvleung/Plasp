@@ -116,7 +116,7 @@ ASP API extension.
 sub File {
     my ( $self ) = @_;
     return path(
-        $self->asp->DocumentRoot, $self->req->path_info
+        $self->asp->DocumentRoot, $self->asp->req->path_info
     )->absolute->stringify;
 }
 

@@ -72,6 +72,8 @@ has '_loggers' => (
     default => sub { {} },
 );
 
+=back
+
 =head1 METHODS
 
 =over

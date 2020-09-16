@@ -20,7 +20,7 @@ use namespace::clean;
 
 with 'Plasp::Compiler', 'Plasp::Parser', 'Plasp::State';
 
-our $VERSION = '0.01';
+our $VERSION = '1.00';
 
 =head1 NAME
 
@@ -28,7 +28,7 @@ Plasp - PerlScript/ASP
 
 =head1 VERSION
 
-version 0.01
+version 1.00
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ In C<MyApp.pm>
 
   package MyApp;
 
-  use Role::Tiny::With;
+  use Moo;
 
   with 'Plasp::App';
 
@@ -59,8 +59,8 @@ to be almost a drop-in replacement. However, there were many features that I
 chose not to implement.
 
 Plasp is a framework built on Plack, which can process ASP scripts. Simply
-apply the L<Plasp::App> role to your app class create an new PSGI app with
-C<<MyApp->new>>.
+apply the L<Plasp::App> role to your app class and create a new PSGI app with
+C<< MyApp->new >>.
 
 Just to be clear, the L<Parser|Plasp::Parser> is almost totally ripped
 off of Joshua Chamas's parser in L<Apache::ASP>. Similarly with the
@@ -146,10 +146,10 @@ subdirectory C<public> relative to the ApplicationRoot.
 =cut
 
 has 'DocumentRoot' => (
-    is      => 'ro',
+    is      => 'rw',
     isa     => Path,
     coerce  => Path->coercion,
-    default => sub { path( shift->ApplicationRoot, 'public' ) },
+    default => sub { path( 'public' )->absolute( shift->ApplicationRoot ) },
 );
 
 =item Global
@@ -167,7 +167,7 @@ has 'Global' => (
     is      => 'rw',
     isa     => Path,
     coerce  => Path->coercion,
-    default => sub { path( '/tmp' ) },
+    default => sub { shift->DocumentRoot },
 );
 
 =item GlobalPackage
@@ -222,7 +222,7 @@ has 'IncludesDir' => (
         return [ map { Path->coercion->( $_ ) } @paths ];
     },
     lazy    => 1,
-    default => sub { [ shift->Global() ] },
+    default => sub { [ shift->Global ] },
 );
 
 =item MailHost
@@ -319,7 +319,7 @@ This functionality is provided by use of L<HTML::FillInForm::ForceUTF8>. For
 more information please see "perldoc HTML::FillInForm::ForceUTF8"
 
 This feature can be enabled on a per form basis at runtime with
-C<<$Response->{FormFill} = 1>>
+C<< $Response->{FormFill} = 1 >>
 
 =cut
 
@@ -466,16 +466,26 @@ for ( qw(Server Request Response GlobalASA) ) {
 sub BUILD {
     my ( $self ) = @_;
 
+    # Prepend $self->ApplicationRoot if DocumentRoo is relative and not found
+    if ( !$self->DocumentRoot->exists && $self->DocumentRoot->is_relative ) {
+        $self->DocumentRoot(
+            path( $self->DocumentRoot )->absolute( $self->ApplicationRoot )
+        );
+    }
+
     # Prepend $self->ApplicationRoot if Global is relative and not found
     if ( !$self->Global->exists && $self->Global->is_relative ) {
-        $self->Global( path( $self->ApplicationRoot, $self->Global ) );
+        $self->Global(
+            path( $self->Global )->absolute( $self->ApplicationRoot )
+        );
     }
 
     # Go through each IncludeDir and check paths
     my @includes_dir;
     for ( @{ $self->IncludesDir } ) {
         if ( $_->is_relative ) {
-            push @includes_dir, path( $self->ApplicationRoot, $_ )->stringify;
+            push @includes_dir,
+                path( $_ )->absolute( $self->ApplicationRoot )->stringify;
         }
         else {
             push @includes_dir, $_;
