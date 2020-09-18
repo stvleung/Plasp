@@ -234,20 +234,12 @@ has 'FormFill' => (
 
 =item $Response->{IsClientConnected}
 
-1 if web client is connected, C<0> if not. This value starts set to 1, and will
-be updated whenever a C<< $Response->Flush() >> is called.
-
-As of Apache::ASP version 2.23 this value is updated correctly before
-F<global.asa> C<Script_OnStart> is called, so global script termination may be
-correctly handled during that event, which one might want to do with excessive
-user STOP/RELOADS when the web server is very busy.
-
-An API extension C<< $Response->IsClientConnected >> may be called for refreshed
-connection status without calling first a C<< $Response->Flush >>
+This is a carryover from Apache::ASP. However, Plack won't be able to detect
+this so we will assume that the client is always connected. This will just
+be true always for compatibility.
 
 =cut
 
-# This attribute has no effect
 has 'IsClientConnected' => (
     is      => 'ro',
     isa     => Bool,
@@ -821,28 +813,6 @@ sub Include {
 
     $asp->execute( $code, @args );
 }
-
-=item $Response->IsClientConnected()
-
-API Extension. C<1> for web client still connected, C<0> if disconnected which
-might happen if the user hits the stop button. The original API for this
-C<< $Response->{IsClientConnected} >> is only updated after a
-C<< $Response->Flush >> is called, so this method may be called for a refreshed
-status.
-
-Note C<< $Response->Flush >> calls C<< $Response->IsClientConnected >> to
-update C<< $Response->{IsClientConnected} >> so to use this you are going
-straight to the source! But if you are doing a loop like:
-
-  while(@data) {
-    $Response->End if ! $Response->{IsClientConnected};
-    my $row = shift @data;
-    %> <%= $row %> <%
-    $Response->Flush;
-  }
-
-Then its more efficient to use the member instead of the method since
-C<< $Response->Flush() >> has already updated that value for you.
 
 =item $Response->Redirect($url)
 

@@ -4,7 +4,7 @@ Plasp - PerlScript/ASP
 
 # VERSION
 
-version 1.00
+version 1.01
 
 # SYNOPSIS
 
@@ -26,8 +26,8 @@ In `app.psgi`
 
 # DESCRIPTION
 
-Plasp is CatalystX::ASP [CatalystX::ASP](https://metacpan.org/pod/CatalystX%3A%3AASP), which is a plugin for Catalyst to
-support ASP (PerlScript) but with Catalyst ripped out.
+Plasp is [CatalystX::ASP](https://metacpan.org/pod/CatalystX%3A%3AASP), which is a plugin for Catalyst to support ASP
+(PerlScript) but with Catalyst ripped out.
 
 This is largely based off of Joshua Chamas's [Apache::ASP](https://metacpan.org/pod/Apache%3A%3AASP), as the application
 I've been working with was written for [Apache::ASP](https://metacpan.org/pod/Apache%3A%3AASP). Thus, this was designed
@@ -175,8 +175,7 @@ The following documentation is also plagiarized from Joshua Chamas.
 
 - Debug
 
-    Currently only a placeholder. Only effect is to turn on stacktrace on `__DIE__`
-    signal.
+    Simply sets the log level to debug
 
 # OBJECTS
 

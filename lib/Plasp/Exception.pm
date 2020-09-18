@@ -91,7 +91,7 @@ Rethrows a caught exception.
 
 sub rethrow {
     my ($self) = @_;
-    croak $self;
+    die $self;
 }
 
 1;

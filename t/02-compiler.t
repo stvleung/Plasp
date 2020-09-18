@@ -9,8 +9,6 @@ use lib "$FindBin::Bin/lib";
 use File::Temp qw(tempfile);
 use Mock::Plasp;
 
-use Moo;
-
 ## no critic (BuiltinFunctions::ProhibitStringyEval)
 
 my ( $script, $parsed_object, $compiled_object, $package, $subid );

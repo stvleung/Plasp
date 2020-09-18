@@ -20,7 +20,7 @@ use namespace::clean;
 
 with 'Plasp::Compiler', 'Plasp::Parser', 'Plasp::State';
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 =head1 NAME
 
@@ -28,7 +28,7 @@ Plasp - PerlScript/ASP
 
 =head1 VERSION
 
-version 1.00
+version 1.01
 
 =head1 SYNOPSIS
 
@@ -50,8 +50,8 @@ In C<app.psgi>
 
 =head1 DESCRIPTION
 
-Plasp is CatalystX::ASP L<CatalystX::ASP>, which is a plugin for Catalyst to
-support ASP (PerlScript) but with Catalyst ripped out.
+Plasp is L<CatalystX::ASP>, which is a plugin for Catalyst to support ASP
+(PerlScript) but with Catalyst ripped out.
 
 This is largely based off of Joshua Chamas's L<Apache::ASP>, as the application
 I've been working with was written for L<Apache::ASP>. Thus, this was designed
@@ -331,8 +331,7 @@ has 'FormFill' => (
 
 =item Debug
 
-Currently only a placeholder. Only effect is to turn on stacktrace on C<__DIE__>
-signal.
+Simply sets the log level to debug
 
 =back
 

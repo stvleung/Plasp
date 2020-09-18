@@ -9,8 +9,6 @@ use lib "$FindBin::Bin/lib";
 use Path::Tiny;
 use Mock::Plasp;
 
-use Moo;
-
 BEGIN { use_ok 'Plasp'; }
 BEGIN { use_ok 'Plasp::Request'; }
 

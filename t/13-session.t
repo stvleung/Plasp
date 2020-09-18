@@ -6,10 +6,8 @@ use Test::More tests => 14;
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
-
-use Moo;
-use Path::Tiny;
 use Mock::Plasp;
+use Path::Tiny;
 
 BEGIN { use_ok 'Plasp'; }
 BEGIN { use_ok 'Plasp::Session'; }

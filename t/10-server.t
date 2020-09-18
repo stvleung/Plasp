@@ -2,22 +2,22 @@
 use 5.006;
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More tests => 17;
+use Test::Exception;
 use utf8;
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
-use Path::Tiny;
 use Mock::Plasp;
-
-use Moo;
+use Path::Tiny;
 
 BEGIN { use_ok 'Plasp'; }
 BEGIN { use_ok 'Plasp::Server'; }
 
-my ( $root, $Server );
+my ( $root, $Response, $Server );
 
-$Server = mock_asp->Server;
+$Server   = mock_asp->Server;
+$Response = mock_asp->Response;
 
 is( $Server->Config( 'GlobalPackage' ),
     'TestApp::ASP',
@@ -69,14 +69,18 @@ if ( Net::SMTP->new( mock_asp->MailHost ) ) {
 TODO: {
         local $TODO = sprintf( '$Server->Mail untested, startup a mail server at %s', mock_asp->MailHost );
         fail( '$Server->Mail mailed to /dev/null' );
-    }
+   }
 }
 is( $Server->RegisterCleanup,
     undef,
     'Unimplemented method $Server->RegisterCleanup'
 );
-is( [ $Server->Transfer( 'templates/some_template.inc' ) ]->[0],
-    "I've been included!",
+throws_ok( sub { $Server->Transfer( 'templates/some_other_template.inc' ) },
+    'Plasp::Exception::End',
+    '$Server->Transfer threw an End exception'
+);
+like( $Response->Output,
+    qr{<p>I've been included!</p>},
     '$Server->Transfer returned correct value'
 );
 is( $Server->URLEncode( '社群首页' ),

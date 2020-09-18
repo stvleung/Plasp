@@ -10,7 +10,7 @@
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : 2
+      "version" : "2"
    },
    "name" : "Plasp",
    "no_index" : {
@@ -26,28 +26,14 @@
       ]
    },
    "prereqs" : {
-      "build" : {
-         "requires" : {
-            "Class::MOP" : "0",
-            "DateTime" : "0",
-            "ExtUtils::MakeMaker" : "6.59",
-            "File::Temp" : "0",
-            "HTTP::Cookies" : "0",
-            "HTTP::Headers" : "0",
-            "HTTP::Request::Common" : "0",
-            "Plack::Test" : "0",
-            "Test::Exception" : "0",
-            "Test::More" : "0",
-            "Text::Lorem" : "0"
-         }
-      },
       "configure" : {
          "requires" : {
-            "Module::Build::Tiny" : "0.035"
+            "Module::Build::Tiny" : "0.039"
          }
       },
       "develop" : {
          "requires" : {
+            "Minilla" : "0",
             "Pod::Coverage::TrustPod" : "0",
             "Test::CPAN::Meta" : "0",
             "Test::Kwalitee::Extra" : "0",
@@ -59,32 +45,48 @@
       },
       "runtime" : {
          "requires" : {
-            "CGI::Simple::Cookie" : "0",
-            "Carp" : "0",
-            "Digest::MD5" : "0",
-            "File::LibMagic" : "0",
-            "File::MMagic" : "0",
-            "File::Slurp" : "0",
-            "HTML::Entities" : "0",
-            "HTML::FillInForm::ForceUTF8" : "0",
-            "HTTP::Date" : "0",
-            "List::Util" : "0",
-            "Module::Runtime" : "0",
-            "Moo" : "0",
-            "Path::Tiny" : "0",
-            "Plack" : "0",
-            "Plack::Util" : "0",
-            "Scalar::Util" : "0",
-            "Sub::HandlesVia" : "0",
-            "Tie::Handle" : "0",
-            "Try::Catch" : "0",
-            "Types::Path::Tiny" : "0",
+            "CGI::Simple::Cookie" : "1.25",
+            "Devel::StackTrace" : "2.04",
+            "Digest::MD5" : "2.55",
+            "Encode" : "3.07",
+            "File::LibMagic" : "1.23",
+            "File::MMagic" : "1.30",
+            "File::Slurp" : "9999.32",
+            "File::Temp" : "0.2309",
+            "HTML::Entities" : "3.75",
+            "HTML::FillInForm::ForceUTF8" : "0.03",
+            "HTTP::Date" : "6.05",
+            "List::Util" : "1.55",
+            "Module::Runtime" : "0.016",
+            "Moo" : "2.004000",
+            "Moo::Role" : "0",
+            "Net::SMTP" : "3.11",
+            "Path::Tiny" : "0.114",
+            "Plack::Request" : "1.0047",
+            "Role::Tiny" : "2.001004",
+            "Scalar::Util" : "1.55",
+            "Sub::HandlesVia" : "0.015",
+            "Try::Catch" : "v1.1.0",
+            "Type::Tiny" : "1.010006",
+            "Types::Path::Tiny" : "0.006",
             "Types::Standard" : "0",
-            "URI" : "0",
+            "URI" : "1.76",
             "URI::Escape" : "0",
-            "namespace::clean" : "0",
-            "parent" : "0",
-            "perl" : "5.010"
+            "namespace::clean" : "0.27"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Class::MOP" : "0",
+            "DateTime" : "0",
+            "HTTP::Cookies" : "0",
+            "HTTP::Request::Common" : "0",
+            "Plack::Test" : "0",
+            "Plack::Util" : "0",
+            "Test::Exception" : "0",
+            "Test::More" : "0",
+            "Text::Lorem" : "0",
+            "parent" : "0"
          }
       }
    },
@@ -100,10 +102,10 @@
          "web" : "https://github.com/stvleung/Plasp"
       }
    },
-   "version" : "1.00",
+   "version" : "1.01",
    "x_contributors" : [
       "Steven Leung <sleung@turnitin.com>"
    ],
-   "x_serialization_backend" : "JSON::PP version 4.04",
+   "x_serialization_backend" : "JSON::PP version 2.27300_01",
    "x_static_install" : 1
 }

@@ -87,7 +87,6 @@ sub compile {
     $code = $1;
 
     no warnings;
-    local $SIG{__DIE__} = \&Carp::confess if $self->Debug;
     eval $code;                 ## no critic (BuiltinFunctions::ProhibitStringyEval)
     if ( $@ ) {
         $self->error( "Error on compilation of $subid: $@" );    # don't throw error, so we can throw die later

@@ -1,4 +1,10 @@
 Revision history for Plasp
 
+
+1.01    Fri Sep 18 09:12:23 2020 -0500
+        - Explicitly declare dependency versions
+        - Clean up documentation
+        - Make $Server->Transfer do as advertised
+        - Remove unnecessary Moo in tests
 1.00    Thu Aug 27 11:25:23 2020 -0500
         - Bold 1.00 initial release!

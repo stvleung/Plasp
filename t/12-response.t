@@ -11,8 +11,6 @@ use Mock::Plasp;
 use Path::Tiny;
 use Plack::Util;
 
-use Moo;
-
 BEGIN { use_ok 'Plasp'; }
 BEGIN { use_ok 'Plasp::Response'; }
 
@@ -172,11 +170,11 @@ is( $Response->ErrorDocument,
     undef,
     'Unimplemented method $Response->ErrorDocument'
 );
-$Response->Include( 'templates/some_other_template.inc' ),
-    like( $Response->Output,
+$Response->Include( 'templates/some_other_template.inc' );
+like( $Response->Output,
     qr|<p>I've been included!</p>|,
     '$Response->Include wrote out template into $Response->Output'
-    );
+);
 $script = "<%= q(I've also been included!) %>";
 $Response->Include( \$script );
 like( $Response->Output,

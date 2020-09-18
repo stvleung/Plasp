@@ -54,7 +54,9 @@ custom Session class.
   );
 
 Since Plasp is designed to be a Plack app and utilizes the PSGI 1.1
-specification, the former method is recommended.
+specification, the former method is recommended. However, you can do both and
+use a custom class that better fits your needs or is more integrated with
+Plack::Middleware::Session.
 
 =cut
 

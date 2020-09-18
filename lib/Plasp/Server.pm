@@ -40,8 +40,7 @@ components, like the ADO component.
 
 =item $Server->{ScriptTimeout} = $seconds
 
-Not implemented. May never be.  Please see the
-Apache Timeout configuration option, normally in httpd.conf.
+Not implemented.
 
 =cut
 
@@ -122,8 +121,7 @@ sub File {
 
 =item $Server->GetLastError()
 
-Not implemented, will likely not ever be because this is dependent
-on how IIS handles errors and is not relevant in Apache.
+Not implemented.
 
 =cut
 
@@ -312,7 +310,7 @@ sub Mail {
 
 =item $Server->RegisterCleanup($sub)
 
-Not implemented. Sorry!
+Not implemented.
 
 =cut
 
@@ -342,7 +340,11 @@ is now just a wrapper for:
 
 =cut
 
-sub Transfer { my $self = shift; $self->asp->Response->Include( @_ ) }
+sub Transfer {
+    my $self = shift;
+    $self->asp->Response->Include( @_ );
+    $self->asp->Response->End;
+}
 
 =item $Server->URLEncode($string)
 
@@ -389,7 +391,7 @@ sub URL {
 
 =item $Server->XSLT(\$xsl_data, \$xml_data)
 
-Not implemented. Sorry!
+Not implemented.
 
 =cut
 

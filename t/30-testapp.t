@@ -57,9 +57,9 @@ $res = $test->request( GET '/templates/some_template.tmpl' );
 is( $res->code, 404, 'Properly not found for templates, though in root' );
 
 $res = $test->request( GET '/redirect.asp' );
-is( $res->code, 302, 'Properly (status) redirected' );
-is( $res->header( 'Location' ), '/welcome.asp', 'Properly (location header) redirected' );
+is( $res->code, 302, 'Properly redirected (status)' );
+is( $res->header( 'Location' ), '/welcome.asp', 'Properly redirected (location header)' );
 
 $res = $test->request( GET '/redirect_permanent.asp' );
-is( $res->code, 301, 'Properly redirected (status) manually' );
-is( $res->header( 'Location' ), '/welcome.asp', 'Properly redirected (location header) manually' );
+is( $res->code, 301, 'Properly redirected manually (status)' );
+is( $res->header( 'Location' ), '/welcome.asp', 'Properly redirected manually (location header)' );

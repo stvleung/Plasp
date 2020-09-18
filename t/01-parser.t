@@ -10,8 +10,6 @@ use lib "$FindBin::Bin/lib";
 use File::Temp qw(tempfile);
 use Mock::Plasp;
 
-use Moo;
-
 my ( $script, $parsed_object );
 my ( $fh,     $filename );
 
