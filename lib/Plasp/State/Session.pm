@@ -8,7 +8,7 @@ requires qw(_fetch_session);
 
 has 'asp' => (
     is       => 'ro',
-    isa      => InstanceOf['Plasp'],
+    isa      => InstanceOf ['Plasp'],
     required => 1,
     weak_ref => 1,
 );

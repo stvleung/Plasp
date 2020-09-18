@@ -77,7 +77,7 @@ has "Application" => (
         require_module $class;
 
         # Create the state object
-        return $class->new( asp => $self, %{$self->ApplicationConfig} );
+        return $class->new( asp => $self, %{ $self->ApplicationConfig } );
     }
 );
 
@@ -126,7 +126,7 @@ has "Session" => (
         require_module $class;
 
         # Create the state object
-        return $class->new( asp => $self, %{$self->SessionConfig} );
+        return $class->new( asp => $self, %{ $self->SessionConfig } );
     }
 );
 

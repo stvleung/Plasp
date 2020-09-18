@@ -58,18 +58,18 @@ require Net::SMTP;
 if ( Net::SMTP->new( mock_asp->MailHost ) ) {
     ok(
         $Server->Mail( {
-                To   => sprintf( '%s@localhost', $ENV{USER} || 'root' ),
-                From => sprintf( '%s@localhost', $ENV{USER} || 'root' ),
+                To      => sprintf( '%s@localhost', $ENV{USER} || 'root' ),
+                From    => sprintf( '%s@localhost', $ENV{USER} || 'root' ),
                 Subject => 'foobar',
                 Body    => 'foobar'
-            } ),
+        } ),
         sprintf( '$Server->Mail mailed to %s@localhost', $ENV{USER} || 'root' )
     );
 } else {
 TODO: {
         local $TODO = sprintf( '$Server->Mail untested, startup a mail server at %s', mock_asp->MailHost );
         fail( '$Server->Mail mailed to /dev/null' );
-   }
+    }
 }
 is( $Server->RegisterCleanup,
     undef,

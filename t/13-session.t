@@ -15,7 +15,7 @@ BEGIN { use_ok 'Plasp::Session'; }
 my $root = path( $FindBin::Bin, '../t/lib/TestApp/root' )->realpath;
 
 my ( $status, $headers, $body, $Session );
-my $headers_writer = sub { $status = $_[0]; $headers = [ @{$_[1]} ] };
+my $headers_writer = sub { $status = $_[0]; $headers = [ @{ $_[1] } ] };
 my $content_writer = sub { push @$body, $_[0] };
 
 $Session = mock_asp->Session;
@@ -45,7 +45,7 @@ is( grep( /foo|bar|IsAbandoned|Timeout/, keys %$Session ),
 ok( exists $Session->{foo},
     'Exists on $Session for existing key'
 );
-ok( ! exists $Session->{baz},
+ok( !exists $Session->{baz},
     'Not exists on $Session for not existing key'
 );
 is( delete $Session->{foo},

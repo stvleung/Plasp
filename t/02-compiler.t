@@ -22,8 +22,8 @@ $script        = q|<% 'foobar' %>|;
 $parsed_object = mock_asp->parse( \$script );
 $package       = mock_asp->GlobalASA->package;
 $subid         = mock_asp->compile( $parsed_object->{data}, "$package\::bar" );
-is( $subid,        "$package\::bar", 'Successfully compiled an ASP script called foo' );
-is( eval "$subid", 'foobar',         'Able to run compiled ASP script and get expected return value' );
+is( $subid, "$package\::bar", 'Successfully compiled an ASP script called foo' );
+is( eval "$subid", 'foobar', 'Able to run compiled ASP script and get expected return value' );
 mock_asp->_undefine_sub( $subid );
 is( eval "$subid", undef, 'Able to undefine compiled ASP script' );
 
@@ -44,7 +44,7 @@ is( eval "$subid", undef, 'Able to undefine compiled ASP file' );
 
 # Test compilation of ASP include
 $compiled_object = mock_asp->compile_include( 'templates/some_template.inc' );
-$subid = $compiled_object->{code};
+$subid           = $compiled_object->{code};
 is( eval "$subid", "I've been included!", 'Able to run compiled ASP include and get expected return value' );
 mock_asp->_undefine_sub( $subid );
 is( eval "$subid", undef, 'Able to undefine compiled ASP include' );

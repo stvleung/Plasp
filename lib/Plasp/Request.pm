@@ -9,7 +9,7 @@ use namespace::clean;
 
 has 'asp' => (
     is       => 'ro',
-    isa      => InstanceOf['Plasp'],
+    isa      => InstanceOf ['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -127,7 +127,7 @@ sub BinaryRead {
     my ( $self, $length ) = @_;
     my $req = $self->asp->req;
     return if $req->content_type =~ /multipart/;
-    my $body  = $req->body;
+    my $body   = $req->body;
     my $buffer = '';
     $length ||= $req->content_length;
     $body->read( $buffer, $length );
@@ -174,17 +174,17 @@ For more information on cookies in ASP, please read C<< $Response->Cookies() >>
 # to load the default value before the object is fully initialized. lazy => 1 is
 # a workaround to build the defaults later
 has 'Cookies' => (
-    is          => 'ro',
-    isa         => HashRef,
-    reader      => '_get_Cookies',
-    lazy        => 1,
-    default     => sub {
+    is      => 'ro',
+    isa     => HashRef,
+    reader  => '_get_Cookies',
+    lazy    => 1,
+    default => sub {
         my ( $self ) = @_;
         my %cookies;
         for my $name ( keys %{ $self->asp->req->cookies } ) {
             my $value = $self->asp->req->cookies->{$name}
-                        ? [ split '&', $self->asp->req->cookies->{$name} ]
-                        : [];
+                ? [ split '&', $self->asp->req->cookies->{$name} ]
+                : [];
             if ( all {/.=./} @$value ) {
                 for ( @$value ) {
                     my ( $key, $val ) = split '=';
@@ -246,18 +246,18 @@ easily.
 =cut
 
 has 'FileUpload' => (
-    is          => 'ro',
-    isa         => HashRef,
-    reader      => '_get_FileUploads',
-    lazy        => 1,
-    default     => sub {
+    is      => 'ro',
+    isa     => HashRef,
+    reader  => '_get_FileUploads',
+    lazy    => 1,
+    default => sub {
         my ( $self ) = @_;
         my %uploads;
 
         # $self->asp->req->uploads is a Hash::MultiValue, however, Apache::ASP
         # does not deal with multiple uploads per-field, so we just pick the
         # last one.
-        for my $field ( keys %{$self->asp->req->uploads} ) {
+        for my $field ( keys %{ $self->asp->req->uploads } ) {
             my $upload = $self->asp->req->uploads->get( $field );
             $uploads{$field} = {
                 ContentType => $upload->content_type,
@@ -311,11 +311,11 @@ are implemented via the CGI.pm module.
 =cut
 
 has 'Form' => (
-    is          => 'ro',
-    isa         => InstanceOf['Hash::MultiValue'],
-    reader      => '_get_Form',
-    lazy        => 1,
-    default     => sub {
+    is      => 'ro',
+    isa     => InstanceOf ['Hash::MultiValue'],
+    reader  => '_get_Form',
+    lazy    => 1,
+    default => sub {
         my ( $self ) = @_;
 
         # ASP includes uploads in its Form()
@@ -359,7 +359,7 @@ nice alias like:
 
 has 'Params' => (
     is          => 'ro',
-    isa         => InstanceOf['Hash::MultiValue'],
+    isa         => InstanceOf ['Hash::MultiValue'],
     reader      => '_get_Params',
     lazy        => 1,
     default     => sub { shift->asp->req->parameters },
@@ -391,7 +391,7 @@ hash of all the query string data.
 
 has 'QueryString' => (
     is          => 'ro',
-    isa         => InstanceOf['Hash::MultiValue'],
+    isa         => InstanceOf ['Hash::MultiValue'],
     reader      => '_get_QueryString',
     lazy        => 1,
     default     => sub { shift->asp->req->query_parameters },
@@ -425,11 +425,11 @@ this method:
 =cut
 
 has 'ServerVariables' => (
-    is          => 'ro',
-    isa         => HashRef,
-    reader      => '_get_ServerVariables',
-    lazy        => 1,
-    default     => sub {
+    is      => 'ro',
+    isa     => HashRef,
+    reader  => '_get_ServerVariables',
+    lazy    => 1,
+    default => sub {
         my ( $self ) = @_;
 
         # Populate %ENV freely because we assume some process upstream will

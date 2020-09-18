@@ -87,9 +87,9 @@ sub compile {
     $code = $1;
 
     no warnings;
-    eval $code;                 ## no critic (BuiltinFunctions::ProhibitStringyEval)
+    eval $code;    ## no critic (BuiltinFunctions::ProhibitStringyEval)
     if ( $@ ) {
-        $self->error( "Error on compilation of $subid: $@" );    # don't throw error, so we can throw die later
+        $self->error( "Error on compilation of $subid: $@" ); # don't throw error, so we can throw die later
         $self->_undefine_sub( $subid );
         return;
     } else {
@@ -129,7 +129,7 @@ sub compile_file {
 
     Plasp::Exception::NotFound->throw unless -r $file;
 
-    my $id = $self->file_id( $file );
+    my $id    = $self->file_id( $file );
     my $subid = join( '', $self->GlobalASA->package, '::', $id, 'xINC' );
 
     return $self->_get_compiled_include( $subid ) if $self->_include_is_compiled( $subid );

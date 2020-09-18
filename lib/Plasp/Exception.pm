@@ -1,11 +1,11 @@
 package Plasp::Exception;
 
+use Moo::Role;
+use Types::Standard qw(Str);
+
 use overload
     q{""}    => sub { $_[0]->as_string },
     fallback => 1;
-
-use Moo::Role;
-use Types::Standard qw(Str);
 
 =head1 NAME
 
@@ -50,17 +50,17 @@ Called when the object is stringified by overloading.
 =cut
 
 sub as_string {
-    my ($self) = @_;
+    my ( $self ) = @_;
     return $self->message;
 }
 
 around BUILDARGS => sub {
-    my ($next, $class, @args) = @_;
-    if (@args == 1 && !ref $args[0]) {
-        @args = (message => $args[0]);
+    my ( $next, $class, @args ) = @_;
+    if ( @args == 1 && !ref $args[0] ) {
+        @args = ( message => $args[0] );
     }
 
-    my $args = $class->$next(@args);
+    my $args = $class->$next( @args );
     $args->{message} ||= $args->{error}
         if exists $args->{error};
 
@@ -79,7 +79,7 @@ Throws a fatal exception.
 
 sub throw {
     my $class = shift;
-    my $error = $class->new(@_);
+    my $error = $class->new( @_ );
     die $error;
 }
 
@@ -90,7 +90,7 @@ Rethrows a caught exception.
 =cut
 
 sub rethrow {
-    my ($self) = @_;
+    my ( $self ) = @_;
     die $self;
 }
 

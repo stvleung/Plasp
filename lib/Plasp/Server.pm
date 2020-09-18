@@ -11,7 +11,7 @@ use namespace::clean;
 
 has 'asp' => (
     is       => 'ro',
-    isa      => InstanceOf['Plasp'],
+    isa      => InstanceOf ['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -272,7 +272,9 @@ sub Mail {
         next unless $receivers;
 
         # assume ref of $receivers is an ARRAY if it is
-        my @receivers = ref $receivers ? @$receivers : ( split( /\s*,\s*/, $receivers ) );
+        my @receivers = ref $receivers
+            ? @$receivers
+            : ( split( /\s*,\s*/, $receivers ) );
         push @to, @receivers;
     }
     $smtp->to( @to ) || return;
@@ -281,13 +283,14 @@ sub Mail {
 
     # assumes MIME-Version 1.0 for Content-Type header, according to RFC 1521
     # http://www.ietf.org/rfc/rfc1521.txt
-    $mail->{'MIME-Version'} = '1.0' if $mail->{'Content-Type'} && !$mail->{'MIME-Version'};
+    $mail->{'MIME-Version'} = '1.0'
+        if $mail->{'Content-Type'} && !$mail->{'MIME-Version'};
 
     my ( @data, %visited );
 
     # Though the list below are actually keys in $mail, this is to get them to
     # appear first, thought I'm not sure why it's needed
-    for my $field ( 'Subject', 'From', 'Reply-To', 'Organization', 'To', keys %$mail ) {
+    for my $field ( qw(Subject From Reply-To Organization To), keys %$mail ) {
         my $value = $mail->{$field};
         next unless $value;
         next if $visited{ lc( $field ) }++;

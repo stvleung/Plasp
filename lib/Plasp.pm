@@ -81,15 +81,15 @@ has '_mm' => (
     is      => 'ro',
     default => sub {
         my $mm = File::MMagic->new( '/etc/magic' );
-        $mm->addFileExts( '\.xml$', 'text/xml' );
-        $mm->addFileExts( '\.csv$', 'text/csv' );
-        $mm->addFileExts( '\.css$', 'text/css' );
-        $mm->addFileExts( '\.js$', 'application/javascript' );
-        $mm->addFileExts( '\.json$', 'application/json' );
-        $mm->addFileExts( '\.gif$', 'image/gif' );
+        $mm->addFileExts( '\.xml$',   'text/xml' );
+        $mm->addFileExts( '\.csv$',   'text/csv' );
+        $mm->addFileExts( '\.css$',   'text/css' );
+        $mm->addFileExts( '\.js$',    'application/javascript' );
+        $mm->addFileExts( '\.json$',  'application/json' );
+        $mm->addFileExts( '\.gif$',   'image/gif' );
         $mm->addFileExts( '\.jpe?g$', 'image/jpeg' );
-        $mm->addFileExts( '\.png$', 'image/png' );
-        $mm->addFileExts( '\.ico$', 'image/x-icon' );
+        $mm->addFileExts( '\.png$',   'image/png' );
+        $mm->addFileExts( '\.ico$',   'image/x-icon' );
         return $mm;
     },
 );
@@ -215,10 +215,10 @@ finally the C<IncludesDir> setting.
 =cut
 
 has 'IncludesDir' => (
-    is      => 'rw',
-    isa     => ArrayRef[Path],
-    coerce  => sub {
-        my @paths = ref $_[0] eq 'ARRAY' ? @{$_[0]} : @_;
+    is     => 'rw',
+    isa    => ArrayRef [Path],
+    coerce => sub {
+        my @paths = ref $_[0] eq 'ARRAY' ? @{ $_[0] } : @_;
         return [ map { Path->coercion->( $_ ) } @paths ];
     },
     lazy    => 1,
@@ -346,7 +346,7 @@ has 'Debug' => (
 has '_include_file_cache' => (
     is          => 'rw',
     isa         => HashRef,
-    default     => sub { { } },
+    default     => sub { {} },
     handles_via => 'Hash',
     handles     => {
         _include_file_from_cache => 'get',
@@ -364,7 +364,7 @@ has '_compile_checksum' => (
             join( '&-+',
                 $VERSION,
                 map { $self->$_ || '' } @CompileChecksumKeys
-                )
+            )
         );
     },
 );
@@ -381,7 +381,7 @@ my $_log = Plasp::Log->new;
 sub log {
     my ( $self ) = @_;
 
-    $_log->asp( $self ) if ref $self && ! $_log->asp;
+    $_log->asp( $self ) if ref $self && !$_log->asp;
 
     return $_log;
 }
@@ -389,7 +389,7 @@ sub log {
 has 'errors' => (
     is          => 'rw',
     isa         => ArrayRef,
-    default     => sub { [ ] },
+    default     => sub { [] },
     handles_via => 'Array',
     handles     => {
         has_errors => 'count',
@@ -399,7 +399,7 @@ has 'errors' => (
 sub error {
     my $self = shift;
     $self->log->error( @_ );
-    push @{$self->errors}, $_[0];
+    push @{ $self->errors }, $_[0];
 }
 
 =head1 OBJECTS
@@ -455,7 +455,7 @@ for ( qw(Server Request Response GlobalASA) ) {
     require_module $class;
     has "$_" => (
         is      => 'ro',
-        isa     => InstanceOf[$class],
+        isa     => InstanceOf [$class],
         clearer => "clear_$_",
         lazy    => 1,
         default => sub { $class->new( asp => shift ) },
@@ -615,7 +615,7 @@ sub execute {
 
             # Determine the MIME type of the content
             ## Suppress warnings from File::MMagic
-            local $SIG{__WARN__} = sub {};
+            local $SIG{__WARN__} = sub { };
             my $mimetype = $self->_mm->checktype_byfilename(
                 $self->req->path_info
             );

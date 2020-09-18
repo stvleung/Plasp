@@ -17,7 +17,7 @@ my ( $fh,     $filename );
 mock_asp( XMLSubsMatch => 'parser:[\w\-]+' );
 
 # Test simple parsing
-$script = q|<p><%= 'foo' %></p>|;
+$script        = q|<p><%= 'foo' %></p>|;
 $parsed_object = mock_asp->parse( \$script );
 like(
     ${ $parsed_object->{data} },
@@ -45,7 +45,7 @@ throws_ok( sub { $parsed_object = mock_asp->parse_file( '' ) },
 );
 
 # Test parsing XMLSubs with content in block
-$script = q|<parser:test arg1='foo' arg2='bar'>inner html</parser:test>|;
+$script        = q|<parser:test arg1='foo' arg2='bar'>inner html</parser:test>|;
 $parsed_object = mock_asp->parse( \$script );
 like(
     ${ $parsed_object->{data} },
@@ -63,7 +63,7 @@ like(
 );
 
 # Test parsing XMLSubs with no content block within
-$script = q|<parser:test arg1='foo' arg2='bar'/>|;
+$script        = q|<parser:test arg1='foo' arg2='bar'/>|;
 $parsed_object = mock_asp->parse( \$script );
 like(
     ${ $parsed_object->{data} },
@@ -81,7 +81,7 @@ like(
 );
 
 # Test parsing for SSI
-$script = q|<!--#include file="templates/some_template.inc"-->|;
+$script        = q|<!--#include file="templates/some_template.inc"-->|;
 $parsed_object = mock_asp->parse( \$script );
 like(
     ${ $parsed_object->{data} },
@@ -99,7 +99,7 @@ like(
 );
 
 # Test parsing on plain HTML
-$script = q|<p>no asp!</p>|;
+$script        = q|<p>no asp!</p>|;
 $parsed_object = mock_asp->parse( \$script );
 is(
     ${ $parsed_object->{data} },

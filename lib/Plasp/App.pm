@@ -103,16 +103,17 @@ or after initialization;
 
 # Create config global variable in order to configure app as class method
 my %_config;
+
 sub config {
     my ( $class, @args ) = @_;
 
     if ( @args ) {
-        my %hash = ref $args[0] eq 'HASH' ? %{$args[0]} : @args;
-        my $attr;
-        for $attr ( keys %hash ) {
+        my %hash = ref $args[0] eq 'HASH' ? %{ $args[0] } : @args;
+        my $last;
+        for my $attr ( keys %hash ) {
             $_config{$attr} = $hash{$attr};
         }
-        return defined $attr ? $_config{$attr} : undef;
+        return defined $last ? $_config{$last} : undef;
     } else {
         return \%_config;
     }
@@ -175,6 +176,7 @@ my %_error_docs = (
 
 # Create a global variable to cache ASP object
 my $_asp;
+
 sub psgi_app {
     my $class = shift;
 
@@ -190,6 +192,7 @@ sub psgi_app {
         my ( $compiled, $error_response );
 
         my $success = try {
+
             # Create new Plack::Request object
             my $req = Plack::Request->new( $env );
 
@@ -197,7 +200,7 @@ sub psgi_app {
             if ( $_asp ) {
                 $_asp->req( $req );
             } else {
-                $_asp = Plasp->new( %{$class->config}, req => $req );
+                $_asp = Plasp->new( %{ $class->config }, req => $req );
             }
 
             # Parse and compile the ASP code
@@ -212,36 +215,35 @@ sub psgi_app {
 
                 # Handle not found exception
                 if ( $_->isa( 'Plasp::Exception::NotFound' ) ) {
-                    $error_response = _not_found_response()
+                    $error_response = _not_found_response();
                 } else {
 
                     # Handle code or compilation exception by loggin it
                     $_asp->error( sprintf( "Encountered %s error: %s",
-                        $_->isa( 'Plasp::Exception::Code' )
+                            $_->isa( 'Plasp::Exception::Code' )
                             ? 'application code'
                             : 'unknown compilation',
-                        $_
+                            $_
                     ) );
 
                     $error_response = _error_response( undef, '500_error' );
                 }
 
-            # Plasp error due to error in Plasp code. $asp and $Response is not
-            # reliable. This implies a bug in Plasp.
             } else {
+
+                # Plasp error due to error in Plasp code. $asp and $Response is
+                # not reliable. This implies a bug in Plasp.
                 Plasp->log->fatal( "Plasp error: $_" );
 
                 $error_response = _error_response(
                     undef,
                     'plasp_error',
-                    $class->config->{Debug}
-                        ? "<pre>$_</pre>"
-                        : ''
+                    $class->config->{Debug} ? "<pre>$_</pre>" : ''
                 );
             }
 
             # Ensure return value is false to signify failure
-            return undef;
+            return;
         };
 
         return $error_response unless $success;
@@ -283,7 +285,7 @@ sub psgi_app {
                             skip_frames    => 1,
                             indent         => 1,
                             ignore_package => __PACKAGE__,
-                        )->as_string
+                            )->as_string
                     );
                 };
 
@@ -310,21 +312,24 @@ sub psgi_app {
                     ) if $_asp->has_errors;
                 }
 
-                return undef;
+                return;
             } finally {
                 if ( $_asp ) {
+
                     # Do one final $Response->Flush
                     my $resp = $_asp->Response;
                     $resp->Flush;
 
-                    # Close the writer so as to conclude the response to the
-                    # client
                     if ( $refs{writer} ) {
+
+                        # Close the writer so as to conclude the response to the
+                        # client
                         $refs{writer}->close;
 
-                    # If not using streaming response, then save response for
-                    # reference later
                     } else {
+
+                        # If not using streaming response, then save response
+                        # for reference later
                         $refs{status}  = $resp->Status;
                         $refs{headers} = $resp->Headers;
                         $refs{body}    = [ $resp->Output ];
@@ -359,11 +364,11 @@ sub psgi_app {
 
 # Construct error response
 sub _error_response {
-    my $responder = shift;
+    my $responder  = shift;
     my $error_type = shift;
 
     my $body = sprintf( $_error_docs{$error_type}, @_ );
-    if ( $_asp  ) {
+    if ( $_asp ) {
         $_asp->Response->Status( 500 );
         $_asp->Response->ContentType( 'text/html' );
 
@@ -383,7 +388,7 @@ sub _error_response {
     # If a responder is defined, then the responder would already have written
     # out the error Response, but otherwise return the three-element array
     unless ( $responder ) {
-        return [ 500, [ 'Content-Type' => 'text/html' ], [ $body ] ];
+        return [ 500, [ 'Content-Type' => 'text/html' ], [$body] ];
     }
 }
 
@@ -402,7 +407,7 @@ sub _not_found_response {
         $body = $_error_docs{'404_not_found'};
     }
 
-    return [ 404, [ 'Content-Type' => 'text/html' ], [ $body ] ];
+    return [ 404, [ 'Content-Type' => 'text/html' ], [$body] ];
 }
 
 

@@ -62,7 +62,7 @@ Plack::Middleware::Session.
 
 sub BUILD {
     my $self = shift;
-    my $env = $self->asp->req->env;
+    my $env  = $self->asp->req->env;
 
     # Copy all the keys from the fetched session object
     my $session = $env->{'psgix.session'};

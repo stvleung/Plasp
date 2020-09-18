@@ -21,7 +21,7 @@ our @Routines = qw(
 
 has 'asp' => (
     is       => 'ro',
-    isa      => InstanceOf['Plasp'],
+    isa      => InstanceOf ['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -91,14 +91,14 @@ has 'package' => (
 
 sub _build_package {
     my ( $self ) = @_;
-    my $asp = $self->asp;
-    my $id = $asp->file_id( $asp->Global, 1 );
+    my $asp      = $self->asp;
+    my $id       = $asp->file_id( $asp->Global, 1 );
     return $asp->GlobalPackage || "Plasp::Compiles::$id";
 }
 
 sub BUILD {
     my ( $self ) = @_;
-    my $asp      = $self->asp;
+    my $asp = $self->asp;
 
     return unless $self->exists;
 
@@ -119,7 +119,7 @@ sub BUILD {
             'sub exit { $main::Response->End(); }',
             "no lib qw($global);",
             '1;',
-            )
+        )
     );
     $code =~ /^(.*)$/s;    # Realized this is for untainting
     $code = $1;
@@ -127,7 +127,7 @@ sub BUILD {
     no warnings;
     eval $code;            ## no critic (BuiltinFunctions::ProhibitStringyEval)
     if ( $@ ) {
-        $self->error( "Error on compilation of global.asa: $@" );    # don't throw error, so we can throw die later
+        $self->error( "Error on compilation of global.asa: $@" ); # don't throw error, so we can throw die later
     }
 }
 

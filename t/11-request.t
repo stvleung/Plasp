@@ -15,7 +15,7 @@ BEGIN { use_ok 'Plasp::Request'; }
 my $Request;
 
 $Request = mock_asp( type => 'upload' )->Request;
-ok( ! $Request->BinaryRead( 26 ),
+ok( !$Request->BinaryRead( 26 ),
     '$Request->BinaryRead should be undef for file uploads'
 );
 is( $Request->ClientCertificate,

@@ -29,9 +29,9 @@ $res = $test->request( GET '/hello_world.asp' );
 like( $res->content, qr/<h1>Hello World!<\/h1>/, 'Simple Hello World page processed!' );
 unlike( $res->content, qr/extra content should not be seen/, '$Response->End properly' );
 like( $res->header( 'Content-Type' ), qr/^TeXt\/HTml/, 'Content type successfully set' );
-is( $res->headers->content_type_charset,         'ISO-LATIN-1', 'Content type charset successfully set' );
-is( get_cookies( $res, 'gotcha' ),         'yup!',        'Cookie successfully set' );
-is( get_cookies( $res, 'another' ),        'gotcha=yup!', 'Another cookie successfully set' );
+is( $res->headers->content_type_charset, 'ISO-LATIN-1', 'Content type charset successfully set' );
+is( get_cookies( $res, 'gotcha' ), 'yup!', 'Cookie successfully set' );
+is( get_cookies( $res, 'another' ), 'gotcha=yup!', 'Another cookie successfully set' );
 
 $res = $test->request( GET '/welcome.asp' );
 like(

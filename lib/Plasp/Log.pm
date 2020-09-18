@@ -5,7 +5,7 @@ use Types::Standard qw(InstanceOf Str ArrayRef HashRef);
 
 has 'asp' => (
     is       => 'rw',
-    isa      => InstanceOf['Plasp'],
+    isa      => InstanceOf ['Plasp'],
     weak_ref => 1,
 );
 
@@ -93,12 +93,14 @@ sub _get_logger {
     # Logging for while processing requests
     if ( ref $self->asp eq 'Plasp' && $self->asp->req ) {
 
-        # If a logger is defined by PSGI, then use it
         if ( $self->asp->req->env->{'psgix.logger'} ) {
+
+            # If a logger is defined by PSGI, then use it
             return $self->asp->req->logger;
 
-        # Otherwise, write to the PSGI error stream
         } else {
+
+            # Otherwise, write to the PSGI error stream
             return $self->_loggers->{request} ||= sub {
                 my ( $entry ) = @_;
                 my ( $level, $message ) = @$entry{qw(level message)};
@@ -110,8 +112,9 @@ sub _get_logger {
             };
         }
 
-    # Logging other errors during startup process
     } else {
+
+        # Logging other errors during startup process
         return $self->_loggers->{startup} ||= sub {
             my ( $entry ) = @_;
             my ( $level, $message ) = @$entry{qw(level message)};
@@ -138,7 +141,7 @@ sub debug {
         message => $message,
         @_,
     };
-    push @{$self->entries}, $entry;
+    push @{ $self->entries }, $entry;
     $logger->( $entry );
 }
 
@@ -158,7 +161,7 @@ sub info {
         message => $message,
         @_,
     };
-    push @{$self->entries}, $entry;
+    push @{ $self->entries }, $entry;
     $logger->( $entry );
 }
 
@@ -178,7 +181,7 @@ sub warn {
         message => $message,
         @_,
     };
-    push @{$self->entries}, $entry;
+    push @{ $self->entries }, $entry;
     $logger->( $entry );
 }
 
@@ -198,7 +201,7 @@ sub error {
         message => $message,
         @_,
     };
-    push @{$self->entries}, $entry;
+    push @{ $self->entries }, $entry;
     $logger->( $entry );
 }
 
@@ -218,7 +221,7 @@ sub fatal {
         message => $message,
         @_,
     };
-    push @{$self->entries}, $entry;
+    push @{ $self->entries }, $entry;
     $logger->( $entry );
 }
 

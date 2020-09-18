@@ -14,12 +14,14 @@ use Tie::Handle;
 
 use Moo;
 use Sub::HandlesVia;
-use Types::Standard qw(InstanceOf Str Int Bool HashRef ArrayRef ScalarRef CodeRef);
+use Types::Standard qw(
+    InstanceOf Str Int Bool HashRef ArrayRef ScalarRef CodeRef
+);
 use namespace::clean;
 
 has 'asp' => (
     is       => 'ro',
-    isa      => InstanceOf['Plasp'],
+    isa      => InstanceOf ['Plasp'],
     required => 1,
     weak_ref => 1,
 );
@@ -122,8 +124,9 @@ has 'CacheControl' => (
 
 before 'CacheControl' => sub {
     my $self = shift;
-    $self->asp->log->warn( 'Headers already written! Setting CacheControl has no effect!' )
-        if scalar( @_ ) && $self->_headers_written;
+    $self->asp->log->warn(
+        'Headers already written! Setting CacheControl has no effect!'
+    ) if scalar( @_ ) && $self->_headers_written;
 };
 
 =item $Response->{Charset}
@@ -144,8 +147,9 @@ has 'Charset' => (
 
 before 'Charset' => sub {
     my $self = shift;
-    $self->asp->log->warn( 'Headers already written! Setting Charset has no effect!' )
-        if scalar( @_ ) && $self->_headers_written;
+    $self->asp->log->warn(
+        'Headers already written! Setting Charset has no effect!'
+    ) if scalar( @_ ) && $self->_headers_written;
 };
 
 # This attribute has no effect
@@ -170,8 +174,9 @@ has 'ContentType' => (
 
 before 'ContentType' => sub {
     my $self = shift;
-    $self->asp->log->warn( 'Headers already written! Setting ContentType has no effect!' )
-        if scalar( @_ ) && $self->_headers_written;
+    $self->asp->log->warn(
+        'Headers already written! Setting ContentType has no effect!'
+    ) if scalar( @_ ) && $self->_headers_written;
 };
 
 =item $Response->{Expires}
@@ -190,8 +195,9 @@ has 'Expires' => (
 
 before 'Expires' => sub {
     my $self = shift;
-    $self->asp->log->warn( 'Headers already written! Setting Expires has no effect!' )
-        if scalar( @_ ) && $self->_headers_written;
+    $self->asp->log->warn(
+        'Headers already written! Setting Expires has no effect!'
+    ) if scalar( @_ ) && $self->_headers_written;
 };
 
 =item $Response->{ExpiresAbsolute}
@@ -203,15 +209,19 @@ e.g.
 =cut
 
 has 'ExpiresAbsolute' => (
-    is      => 'rw',
-    isa     => sub { die "$_[0] is not a supported date format!" if $_[0] && Str->check( $_[0] ) && ! str2time $_[0] },
+    is  => 'rw',
+    isa => sub {
+        die "$_[0] is not a supported date format!"
+            if $_[0] && Str->check( $_[0] ) && !str2time $_[0];
+    },
     default => '',
 );
 
 before 'ExpiresAbsolute' => sub {
     my $self = shift;
-    $self->asp->log->warn( 'Headers already written! Setting ExpiresAbsolute has no effect!' )
-        if scalar( @_ ) && $self->_headers_written;
+    $self->asp->log->warn(
+        'Headers already written! Setting ExpiresAbsolute has no effect!'
+    ) if scalar( @_ ) && $self->_headers_written;
 };
 
 =item $Response->{FormFill}
@@ -268,8 +278,9 @@ has 'Status' => (
 
 before 'Status' => sub {
     my $self = shift;
-    $self->asp->log->warn( 'Headers already written! Setting Status has no effect!' )
-        if scalar( @_ ) && $self->_headers_written;
+    $self->asp->log->warn(
+        'Headers already written! Setting Status has no effect!'
+    ) if scalar( @_ ) && $self->_headers_written;
 };
 
 sub BUILD {
@@ -298,17 +309,17 @@ the main page is sent.
 =cut
 
 has 'Headers' => (
-    is      => 'rw',
-    isa     => ArrayRef
-    default => sub { [ ] },
+    is          => 'rw',
+    isa         => ArrayRef
+        default => sub { [] },
 );
 
 sub AddHeader {
     my ( $self, $name, $value ) = @_;
 
     $self->asp->log->warn( sprintf(
-        'Headers already written! Calling AddHeader with %s %s has no effect!',
-        $name, $value
+            'Headers already written! Calling AddHeader with %s %s has no effect!',
+            $name, $value
     ) ) if $self->_headers_written;
 
     # Don't duplicate these headers, set them for later
@@ -366,15 +377,19 @@ Erases buffered ASP output.
 sub Clear {
     my ( $self ) = @_;
 
-    # If a _content_writer is defined, then no need to keep track of flushed
-    # offset, simply clear Output buffer
     if ( $self->_content_writer ) {
+
+        # If a _content_writer is defined, then no need to keep track of flushed
+        # offset, simply clear Output buffer
         $self->clear_Output;
 
-    # Otherwise, keep track of last flushed offset and clear everything after
-    # that point.
     } else {
-        defined $self->Output && $self->Output( $self->OutputSubstr( 0, $self->_flushed_offset ) );
+
+        # Otherwise, keep track of last flushed offset and clear everything
+        # after that point.
+        defined $self->Output && $self->Output(
+            $self->OutputSubstr( 0, $self->_flushed_offset )
+        );
     }
 
     $self->{BinaryRef} = \( $self->{Output} );
@@ -462,8 +477,9 @@ has 'Cookies' => (
 
 before '_set_Cookie' => sub {
     my $self = shift;
-    $self->asp->log->warn( 'Headers already written! Setting Cookies has no effect!' )
-        if $self->_headers_written;
+    $self->asp->log->warn(
+        'Headers already written! Setting Cookies has no effect!'
+    ) if $self->_headers_written;
 };
 
 sub Cookies {
@@ -513,19 +529,24 @@ sub CookiesHeaders {
                 # This is really to support Apache::ASP's support for hashes
                 # as a cookie value
                 if ( $key =~ m/value/i && ref( $cookie->{$key} ) eq 'HASH' ) {
-                    $hash{-value} =
-                        [ map { "$_=" . $cookie->{$key}{$_} } keys %{ $cookie->{$key} } ];
+                    $hash{-value} = [
+                        map {
+                            "$_=" . $cookie->{$key}{$_}
+                        } keys %{ $cookie->{$key} }
+                    ];
                 } else {
 
-                    # Thankfully, don't need to make 'value' an arrayref for CGI::Simple::Cookie
-                    $hash{'-' . lc( $key )} = $cookie->{$key};
+                    # Thankfully, don't need to make 'value' an arrayref for
+                    # CGI::Simple::Cookie
+                    $hash{ '-' . lc( $key ) } = $cookie->{$key};
                 }
             }
         } else {
             $hash{-value} = $cookie;
         }
 
-        push @headers, 'Set-Cookie' => CGI::Simple::Cookie->new( %hash )->as_string;
+        push @headers,
+            'Set-Cookie' => CGI::Simple::Cookie->new( %hash )->as_string;
     }
 
     return \@headers;
@@ -590,7 +611,9 @@ sub End {
 # TODO will not implement
 sub ErrorDocument {
     my ( $self, $code, $uri ) = @_;
-    $self->asp->log->warn( "\$Response->ErrorDocument has not been implemented!" );
+    $self->asp->log->warn(
+        "\$Response->ErrorDocument has not been implemented!"
+    );
     return;
 }
 
@@ -641,7 +664,8 @@ sub Flush {
         # Set the Expires header from either Expires or ExpiresAbsolute
         # attribute
         if ( $self->Expires ) {
-            push @{ $self->Headers }, Expires => time2str( time + $self->Expires );
+            push @{ $self->Headers },
+                Expires => time2str( time + $self->Expires );
         } elsif ( $self->ExpiresAbsolute ) {
             push @{ $self->Headers }, Expires => $self->ExpiresAbsolute;
         }
@@ -705,16 +729,18 @@ sub Flush {
         $body = Encode::encode( 'UTF-8', $body );
     }
 
-    # In the case that streaming response is supported, a _content_writer
-    # should be defined. If so, use it to write out the body, then clear
-    # Output buffer.
     if ( $self->_content_writer ) {
+
+        # In the case that streaming response is supported, a _content_writer
+        # should be defined. If so, use it to write out the body, then clear
+        # Output buffer.
         $self->_content_writer->( $body );
         $self->Clear;
 
-    # If streaming response not supported, then keep track of a flushed offset
-    # and save the output up to that point.
     } else {
+
+        # If streaming response not supported, then keep track of a flushed
+        # offset and save the output up to that point.
         $self->_flushed_offset( $self->OutputLength );
     }
 
@@ -781,17 +807,19 @@ sub Include {
 
     my $compiled;
     if ( ref( $include ) && ref( $include ) eq 'SCALAR' ) {
-        my $scriptref = $include;
+        my $scriptref     = $include;
         my $parsed_object = $asp->parse( $scriptref );
         $compiled = {
             mtime => time(),
             perl  => $parsed_object->{data},
         };
         my $caller = [ caller( 1 ) ]->[3] || 'main';
-        my $id = join( '', '__ASP_', $caller, 'x', $asp->_compile_checksum );
+        my $id    = join( '', '__ASP_', $caller, 'x', $asp->_compile_checksum );
         my $subid = join( '', $asp->GlobalASA->package, '::', $id, 'xREF' );
         if ( $parsed_object->{is_perl}
-            && ( my $code = $asp->compile( $parsed_object->{data}, $subid ) ) ) {
+            && ( my $code = $asp->compile(
+                    $parsed_object->{data},
+                    $subid ) ) ) {
             $compiled->{is_perl} = 1;
             $compiled->{code}    = $code;
         } else {

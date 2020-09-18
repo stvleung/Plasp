@@ -17,7 +17,7 @@ BEGIN { use_ok 'Plasp::Response'; }
 my ( $script, $htmlref );
 my ( $status, $headers, $body, @cookies, $Response );
 
-my $headers_writer = sub { $status = $_[0]; $headers = [ @{$_[1]} ] };
+my $headers_writer = sub { $status = $_[0]; $headers = [ @{ $_[1] } ] };
 my $content_writer = sub { push @$body, $_[0] };
 
 $Response = mock_asp->Response;
@@ -95,11 +95,11 @@ $Response->_content_writer( $content_writer );
 ( $status, $headers, $body ) = ( undef, undef, undef );
 
 $Response->AddHeader( 'X-Foo', 'bar' );
-ok( ! $headers,
+ok( !$headers,
     '$Response has not written X-Foo header out yet'
 );
 $Response->Cookies( 'foo', 'bar' );
-ok( ! $headers,
+ok( !$headers,
     '$Response has not written Cookies headers out yet'
 );
 $Response->Cookies( 'foofoo', 'baz', 'bar' );
@@ -140,7 +140,7 @@ like( $Response->Output,
     '$Response->WriteRef goes to $Response->Output'
 );
 $Response->Flush;
-ok( ! $Response->Output,
+ok( !$Response->Output,
     '$Response->Output should be empty after $Response->Flush'
 );
 ok( grep ( /THIS GOES TO THE CLIENT/, @$body ),
@@ -151,10 +151,10 @@ ok( grep ( /THIS ALSO ALSO ALSO GOES TO THE CLIENT/, @$body ),
 );
 $Response->Write( "THIS SHOULD NOT GO TO THE CLIENT\n" );
 $Response->Clear;
-ok( ! grep ( /THIS SHOULD NOT GO TO THE CLIENT/, @$body ),
+ok( !grep ( /THIS SHOULD NOT GO TO THE CLIENT/, @$body ),
     'Client should not have Output after $Response->Clear'
 );
-ok( ! $Response->Output,
+ok( !$Response->Output,
     '$Response->Output should be empty after $Response->Clear'
 );
 
