@@ -34,7 +34,7 @@ on configure => sub {
 on test => sub {
     requires 'Class::MOP';
     requires 'DateTime';
-    requires 'HTTP::Cookies';
+    requires 'HTTP::Cookies', '6.08';
     requires 'HTTP::Request::Common';
     requires 'Plack::Test';
     requires 'Plack::Util';

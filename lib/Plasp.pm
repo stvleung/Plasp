@@ -20,7 +20,7 @@ use namespace::clean;
 
 with 'Plasp::Compiler', 'Plasp::Parser', 'Plasp::State';
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 =head1 NAME
 
@@ -28,7 +28,7 @@ Plasp - PerlScript/ASP
 
 =head1 VERSION
 
-version 1.01
+version 1.02
 
 =head1 SYNOPSIS
 
@@ -80,7 +80,7 @@ has 'req' => (
 has '_mm' => (
     is      => 'ro',
     default => sub {
-        my $mm = File::MMagic->new( '/etc/magic' );
+        my $mm = File::MMagic->new;
         $mm->addFileExts( '\.xml$',   'text/xml' );
         $mm->addFileExts( '\.csv$',   'text/csv' );
         $mm->addFileExts( '\.css$',   'text/css' );
