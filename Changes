@@ -1,6 +1,8 @@
 Revision history for Plasp
 
 {{$NEXT}}
+        - Fix $Response->{Cookies} for cookie with undef value
+        - Cleanup cleanup errors from global destruction
 1.08    Fri Jul 2 16:04:45 2021 -0400
         - Fix stack trace in application error
         - Keep stack trace of original error encountered, storing in exception
